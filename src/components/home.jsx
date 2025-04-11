@@ -159,7 +159,7 @@ const SmartFarmLanding = () => {
                     href="mailto:Kareem.zeedan@gmail.com"
                     className="text-lg text-gray-600 hover:text-green-600 transition-colors"
                   >
-                    Kareem.zeedan@gmail.com
+                    Kareemzeedan@gmail.com
                   </a>
                 </div>
               </div>
