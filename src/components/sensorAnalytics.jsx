@@ -50,6 +50,8 @@ const SensorAnalytics = () => {
     "temperature",
     "light",
     "soil",
+    "humidity",
+    "pressure",
   ]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [customDateRange, setCustomDateRange] = useState({
@@ -64,29 +66,45 @@ const SensorAnalytics = () => {
   const [temperatureData, setTemperatureData] = useState([]);
   const [lightData, setLightData] = useState([]);
   const [soilData, setSoilData] = useState([]);
+  const [humidityData, setHumidityData] = useState([]);
+  const [pressureData, setPressureData] = useState([]);
 
   // Statistics
   const [stats, setStats] = useState({
     temperature: {
-      current: 25.6,
-      min: 18.3,
-      max: 29.7,
-      avg: 24.2,
+      current: 0,
+      min: 0,
+      max: 0,
+      avg: 0,
       trend: "stable",
     },
     light: {
-      current: 850,
-      min: 450,
-      max: 1200,
-      avg: 782,
-      trend: "increasing",
+      current: 0,
+      min: 0,
+      max: 0,
+      avg: 0,
+      trend: "stable",
     },
     soil: {
-      current: 68,
-      min: 42,
-      max: 78,
-      avg: 62,
-      trend: "decreasing",
+      current: 0,
+      min: 0,
+      max: 0,
+      avg: 0,
+      trend: "stable",
+    },
+    humidity: {
+      current: 0,
+      min: 0,
+      max: 0,
+      avg: 0,
+      trend: "stable",
+    },
+    pressure: {
+      current: 0,
+      min: 0,
+      max: 0,
+      avg: 0,
+      trend: "stable",
     },
   });
 
@@ -126,48 +144,44 @@ const SensorAnalytics = () => {
     try {
       setIsRefreshing(true);
 
-      setTimeout(() => {
-        // Simulate sensor data with randomization similar to SensorsPage
-        const generateSensorData = (baseValue, baseStatus) => {
-          return {
-            value: baseValue + (Math.random() * 2 - 1).toFixed(1),
-            unit: baseValue === 25.6 ? "°C" : baseValue === 850 ? "lux" : "%",
-            status:
-              Math.random() > 0.8
-                ? "warning"
-                : Math.random() > 0.95
-                ? "critical"
-                : "normal",
-            lastUpdated: new Date(),
-          };
-        };
+      // Get the time range for the query
+      let startTime;
+      const now = new Date();
 
-        // Generate data for different time ranges
-        let tempData = [];
-        let lightData = [];
-        let soilData = [];
+      if (range === "24h") {
+        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      } else if (range === "7d") {
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else if (range === "30d") {
+        startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      } else if (range === "custom") {
+        startTime = new Date(customDateRange.start);
+        now.setHours(23, 59, 59, 999); // Set to end of the day
+      }
 
-        const dataPoints =
-          range === "24h"
-            ? 24
-            : range === "7d"
-            ? 7
-            : range === "30d"
-            ? 30
-            : range === "custom"
-            ? Math.abs(
-                Math.ceil(
-                  (new Date(customDateRange.end) -
-                    new Date(customDateRange.start)) /
-                    (24 * 60 * 60 * 1000)
-                )
-              )
-            : 24;
+      // Query Firestore for sensor data within the time range
+      const sensorDataRef = collection(db, "sensorData");
+      const q = query(
+        sensorDataRef,
+        where("timestamp", ">=", Timestamp.fromDate(startTime)),
+        where("timestamp", "<=", Timestamp.fromDate(now)),
+        orderBy("timestamp", "asc")
+      );
 
-        for (let i = 0; i < dataPoints; i++) {
-          const timestamp = new Date(
-            Date.now() - (dataPoints - i - 1) * 24 * 60 * 60 * 1000
-          );
+      const querySnapshot = await getDocs(q);
+
+      // Process the data
+      const tempData = [];
+      const lightData = [];
+      const soilData = [];
+      const humidData = [];
+      const pressData = [];
+
+      // If we have data
+      if (!querySnapshot.empty) {
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const timestamp = data.timestamp.toDate();
 
           const timeLabel =
             range === "24h"
@@ -180,32 +194,65 @@ const SensorAnalytics = () => {
                   day: "numeric",
                 });
 
-          tempData.push({
-            time: timeLabel,
-            timestamp: timestamp,
-            value: (25 + Math.random() * 2).toFixed(1),
-          });
+          if (data.temperature !== undefined) {
+            tempData.push({
+              time: timeLabel,
+              timestamp: timestamp,
+              value: parseFloat(data.temperature).toFixed(1),
+            });
+          }
 
-          lightData.push({
-            time: timeLabel,
-            timestamp: timestamp,
-            value: Math.floor(800 + Math.random() * 200),
-          });
+          if (data.Light !== undefined) {
+            lightData.push({
+              time: timeLabel,
+              timestamp: timestamp,
+              value: Math.floor(data.Light),
+            });
+          }
 
-          soilData.push({
-            time: timeLabel,
-            timestamp: timestamp,
-            value: Math.floor(70 + Math.random() * 15),
-          });
-        }
+          if (data["Soil humidity"] !== undefined) {
+            soilData.push({
+              time: timeLabel,
+              timestamp: timestamp,
+              value: Math.floor(data["Soil humidity"]),
+            });
+          }
+
+          if (data.humidity !== undefined) {
+            humidData.push({
+              time: timeLabel,
+              timestamp: timestamp,
+              value: Math.floor(data.humidity),
+            });
+          }
+
+          if (data.Pressure !== undefined) {
+            pressData.push({
+              time: timeLabel,
+              timestamp: timestamp,
+              value: Math.floor(data.Pressure),
+            });
+          }
+        });
 
         // Update chart data
         setTemperatureData(tempData);
         setLightData(lightData);
         setSoilData(soilData);
+        setHumidityData(humidData);
+        setPressureData(pressData);
 
-        // Update statistics with trend calculation
+        // Calculate and update statistics
         const calculateStats = (data) => {
+          if (data.length === 0)
+            return {
+              current: 0,
+              min: 0,
+              max: 0,
+              avg: 0,
+              trend: "stable",
+            };
+
           const values = data.map((item) => parseFloat(item.value));
           const trend = calculateTrend(values);
 
@@ -225,22 +272,30 @@ const SensorAnalytics = () => {
 
         setStats({
           temperature: calculateStats(tempData),
-          light: {
-            ...calculateStats(lightData),
-            current: Math.floor(lightData[lightData.length - 1].value),
-            min: Math.min(...lightData.map((item) => parseFloat(item.value))),
-            max: Math.max(...lightData.map((item) => parseFloat(item.value))),
-          },
-          soil: {
-            ...calculateStats(soilData),
-            current: Math.floor(soilData[soilData.length - 1].value),
-            min: Math.min(...soilData.map((item) => parseFloat(item.value))),
-            max: Math.max(...soilData.map((item) => parseFloat(item.value))),
-          },
+          light: calculateStats(lightData),
+          soil: calculateStats(soilData),
+          humidity: calculateStats(humidData),
+          pressure: calculateStats(pressData),
         });
+      } else {
+        // If no data, set empty charts
+        setTemperatureData([]);
+        setLightData([]);
+        setSoilData([]);
+        setHumidityData([]);
+        setPressureData([]);
 
-        setIsRefreshing(false);
-      }, 800);
+        // Reset stats
+        setStats({
+          temperature: { current: 0, min: 0, max: 0, avg: 0, trend: "stable" },
+          light: { current: 0, min: 0, max: 0, avg: 0, trend: "stable" },
+          soil: { current: 0, min: 0, max: 0, avg: 0, trend: "stable" },
+          humidity: { current: 0, min: 0, max: 0, avg: 0, trend: "stable" },
+          pressure: { current: 0, min: 0, max: 0, avg: 0, trend: "stable" },
+        });
+      }
+
+      setIsRefreshing(false);
     } catch (error) {
       console.error("Error fetching sensor data:", error);
       setIsRefreshing(false);
@@ -304,7 +359,9 @@ const SensorAnalytics = () => {
     const maxLength = Math.max(
       temperatureData.length,
       lightData.length,
-      soilData.length
+      soilData.length,
+      humidityData.length,
+      pressureData.length
     );
 
     for (let i = 0; i < maxLength; i++) {
@@ -317,6 +374,8 @@ const SensorAnalytics = () => {
         Temperature: i < temperatureData.length ? temperatureData[i].value : "",
         Light: i < lightData.length ? lightData[i].value : "",
         "Soil Moisture": i < soilData.length ? soilData[i].value : "",
+        "Air Humidity": i < humidityData.length ? humidityData[i].value : "",
+        "Air Pressure": i < pressureData.length ? pressureData[i].value : "",
       };
 
       combinedData.push(dataPoint);
@@ -545,7 +604,7 @@ const SensorAnalytics = () => {
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Sensors
               </h3>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => handleSensorToggle("temperature")}
                   className={`px-3 py-1.5 rounded-md text-sm flex items-center ${
@@ -578,6 +637,49 @@ const SensorAnalytics = () => {
                 >
                   <Sprout className="h-4 w-4 mr-1" />
                   Soil Moisture
+                </button>
+                <button
+                  onClick={() => handleSensorToggle("humidity")}
+                  className={`px-3 py-1.5 rounded-md text-sm flex items-center ${
+                    selectedSensors.includes("humidity")
+                      ? "bg-blue-100 text-blue-700 border-blue-300"
+                      : "bg-gray-100 text-gray-700 border-gray-300"
+                  } border`}
+                >
+                  <svg
+                    className="h-4 w-4 mr-1"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 2v6M12 22v-6M4.93 10.93l4.24 4.24M14.83 8.83l4.24 4.24M2 16h6M22 16h-6M10.93 19.07l4.24-4.24M8.83 5.17l4.24 4.24" />
+                  </svg>
+                  Humidity
+                </button>
+                <button
+                  onClick={() => handleSensorToggle("pressure")}
+                  className={`px-3 py-1.5 rounded-md text-sm flex items-center ${
+                    selectedSensors.includes("pressure")
+                      ? "bg-purple-100 text-purple-700 border-purple-300"
+                      : "bg-gray-100 text-gray-700 border-gray-300"
+                  } border`}
+                >
+                  <svg
+                    className="h-4 w-4 mr-1"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M8 12h8M12 8v8" />
+                  </svg>
+                  Pressure
                 </button>
               </div>
             </div>
@@ -696,19 +798,128 @@ const SensorAnalytics = () => {
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs text-gray-500">Current</p>
-                  <p className="text-xl font-bold">{stats.soil.current}%</p>
+                  <p className="text-xl font-bold">{stats.soil.current}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Average</p>
-                  <p className="text-lg font-semibold">{stats.soil.avg}%</p>
+                  <p className="text-lg font-semibold">{stats.soil.avg}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Min</p>
-                  <p className="text-sm font-medium">{stats.soil.min}%</p>
+                  <p className="text-sm font-medium">{stats.soil.min}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Max</p>
-                  <p className="text-sm font-medium">{stats.soil.max}%</p>
+                  <p className="text-sm font-medium">{stats.soil.max}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedSensors.includes("humidity") && (
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center">
+                  <svg
+                    className="h-5 w-5 text-blue-500 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 2v6M12 22v-6M4.93 10.93l4.24 4.24M14.83 8.83l4.24 4.24M2 16h6M22 16h-6M10.93 19.07l4.24-4.24M8.83 5.17l4.24 4.24" />
+                  </svg>
+                  <h3 className="font-medium text-gray-900">Air Humidity</h3>
+                </div>
+                <div className="flex items-center">
+                  {getTrendIcon(stats.humidity.trend)}
+                  <span
+                    className={`text-sm ml-1 ${getTrendColor(
+                      stats.humidity.trend
+                    )}`}
+                  >
+                    {stats.humidity.trend.charAt(0).toUpperCase() +
+                      stats.humidity.trend.slice(1)}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-gray-500">Current</p>
+                  <p className="text-xl font-bold">{stats.humidity.current}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Average</p>
+                  <p className="text-lg font-semibold">{stats.humidity.avg}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Min</p>
+                  <p className="text-sm font-medium">{stats.humidity.min}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Max</p>
+                  <p className="text-sm font-medium">{stats.humidity.max}%</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedSensors.includes("pressure") && (
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center">
+                  <svg
+                    className="h-5 w-5 text-purple-500 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M8 12h8M12 8v8" />
+                  </svg>
+                  <h3 className="font-medium text-gray-900">Air Pressure</h3>
+                </div>
+                <div className="flex items-center">
+                  {getTrendIcon(stats.pressure.trend)}
+                  <span
+                    className={`text-sm ml-1 ${getTrendColor(
+                      stats.pressure.trend
+                    )}`}
+                  >
+                    {stats.pressure.trend.charAt(0).toUpperCase() +
+                      stats.pressure.trend.slice(1)}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-gray-500">Current</p>
+                  <p className="text-xl font-bold">
+                    {stats.pressure.current} hPa
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Average</p>
+                  <p className="text-lg font-semibold">
+                    {stats.pressure.avg} hPa
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Min</p>
+                  <p className="text-sm font-medium">
+                    {stats.pressure.min} hPa
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Max</p>
+                  <p className="text-sm font-medium">
+                    {stats.pressure.max} hPa
+                  </p>
                 </div>
               </div>
             </div>
@@ -816,12 +1027,17 @@ const SensorAnalytics = () => {
 
             {/* Soil Moisture Chart */}
             {selectedSensors.includes("soil") && (
-              <div className="pb-2">
+              <div
+                className={
+                  selectedSensors.includes("humidity") ||
+                  selectedSensors.includes("pressure")
+                    ? "border-b border-gray-100 pb-6"
+                    : "pb-2"
+                }
+              >
                 <div className="flex items-center mb-2">
                   <Sprout className="h-5 w-5 text-green-500 mr-2" />
-                  <h4 className="font-medium text-gray-900">
-                    Soil Moisture (%)
-                  </h4>
+                  <h4 className="font-medium text-gray-900">Soil Moisture</h4>
                 </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -852,6 +1068,123 @@ const SensorAnalytics = () => {
                         activeDot={{ r: 6 }}
                       />
                     </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Air Humidity Chart */}
+            {selectedSensors.includes("humidity") && (
+              <div
+                className={
+                  selectedSensors.includes("pressure")
+                    ? "border-b border-gray-100 pb-6"
+                    : "pb-2"
+                }
+              >
+                <div className="flex items-center mb-2">
+                  <svg
+                    className="h-5 w-5 text-blue-500 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 2v6M12 22v-6M4.93 10.93l4.24 4.24M14.83 8.83l4.24 4.24M2 16h6M22 16h-6M10.93 19.07l4.24-4.24M8.83 5.17l4.24 4.24" />
+                  </svg>
+                  <h4 className="font-medium text-gray-900">
+                    Air Humidity (%)
+                  </h4>
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={humidityData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f0f0f0"
+                      />
+                      <XAxis
+                        dataKey="time"
+                        tick={{ fontSize: 12 }}
+                        tickMargin={10}
+                      />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+                        formatter={(value) => [`${value}%`, "Air Humidity"]}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#3b82f6"
+                        fill="#dbeafe"
+                        activeDot={{ r: 6 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Air Pressure Chart */}
+            {selectedSensors.includes("pressure") && (
+              <div className="pb-2">
+                <div className="flex items-center mb-2">
+                  <svg
+                    className="h-5 w-5 text-purple-500 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M8 12h8M12 8v8" />
+                  </svg>
+                  <h4 className="font-medium text-gray-900">
+                    Air Pressure (hPa)
+                  </h4>
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={pressureData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f0f0f0"
+                      />
+                      <XAxis
+                        dataKey="time"
+                        tick={{ fontSize: 12 }}
+                        tickMargin={10}
+                      />
+                      <YAxis
+                        domain={["auto", "auto"]}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip
+                        contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+                        formatter={(value) => [`${value} hPa`, "Air Pressure"]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#8b5cf6"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
