@@ -22,6 +22,8 @@ import {
   Shield,
   Gauge,
   AlertTriangle,
+  Info,
+  Activity,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -200,11 +202,9 @@ const WeatherPage = () => {
     navigate(-1);
   };
 
-  // UPDATED: Input handler - allow letters, symbols, and spaces
-  // Specifically allowing symbols requested: !@#$%^&*()_<>?"|:{}~
+  // Input handler - allow letters, symbols, and spaces
   const handleInputChange = (e) => {
     // Accept all letters, numbers, spaces, and common symbols
-    // Avoid removing symbols that might be part of location names
     setSearchTerm(e.target.value);
     setSearchError("");
   };
@@ -273,11 +273,296 @@ const WeatherPage = () => {
     }
   };
 
-  // Function to get wind direction as a cardinal point
+  // Enhanced: Function to get wind direction as a cardinal point with more details
   const getWindDirection = (degrees) => {
-    const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-    const index = Math.round(degrees / 45) % 8;
+    if (degrees === undefined) return "N/A";
+
+    const directions = [
+      "N",
+      "NNE",
+      "NE",
+      "ENE",
+      "E",
+      "ESE",
+      "SE",
+      "SSE",
+      "S",
+      "SSW",
+      "SW",
+      "WSW",
+      "W",
+      "WNW",
+      "NW",
+      "NNW",
+    ];
+
+    // Calculate the index (16 directions)
+    const index = Math.round(degrees / 22.5) % 16;
     return directions[index];
+  };
+
+  // Function to translate wind speed to Beaufort scale
+  const getBeaufortScale = (speedKmh) => {
+    if (speedKmh < 1) return { force: 0, description: "Calm" };
+    if (speedKmh < 6) return { force: 1, description: "Light air" };
+    if (speedKmh < 12) return { force: 2, description: "Light breeze" };
+    if (speedKmh < 20) return { force: 3, description: "Gentle breeze" };
+    if (speedKmh < 29) return { force: 4, description: "Moderate breeze" };
+    if (speedKmh < 39) return { force: 5, description: "Fresh breeze" };
+    if (speedKmh < 50) return { force: 6, description: "Strong breeze" };
+    if (speedKmh < 62) return { force: 7, description: "High wind" };
+    if (speedKmh < 75) return { force: 8, description: "Gale" };
+    if (speedKmh < 89) return { force: 9, description: "Strong gale" };
+    if (speedKmh < 103) return { force: 10, description: "Storm" };
+    if (speedKmh < 118) return { force: 11, description: "Violent storm" };
+    return { force: 12, description: "Hurricane" };
+  };
+
+  // NEW COMPONENT: Enhanced Wind Details
+  const EnhancedWindDetails = ({ city }) => {
+    const beaufort = getBeaufortScale(parseInt(city.windSpeed));
+
+    // Parse wind speed for calculations
+    const windSpeedNum = parseInt(city.windSpeed);
+    const windGustsNum = parseInt(city.windGusts);
+
+    // Calculate gust factor (how much stronger the gusts are compared to average)
+    const gustFactor = windGustsNum / windSpeedNum;
+
+    // Determine color and description based on wind speed
+    const getWindSpeedColor = (speed) => {
+      if (speed < 10) return { color: "#22c55e", text: "Light" }; // green
+      if (speed < 20) return { color: "#60a5fa", text: "Moderate" }; // blue
+      if (speed < 40) return { color: "#facc15", text: "Strong" }; // yellow
+      if (speed < 60) return { color: "#f97316", text: "Very Strong" }; // orange
+      return { color: "#ef4444", text: "Extreme" }; // red
+    };
+
+    const windInfo = getWindSpeedColor(windSpeedNum);
+
+    // Get wind effect description
+    const getWindEffect = (force) => {
+      const effects = [
+        "Calm. Smoke rises vertically.",
+        "Wind barely noticeable. Smoke drifts slowly.",
+        "Light breeze felt on face. Leaves rustle.",
+        "Leaves and small twigs in constant motion.",
+        "Dust and loose paper raised. Small branches move.",
+        "Small trees sway. Waves form on inland waters.",
+        "Large branches move. Whistling heard in wires.",
+        "Whole trees move. Difficult to walk against wind.",
+        "Twigs break off trees. Progress impeded when walking.",
+        "Slight structural damage occurs. Roofing damaged.",
+        "Trees uprooted. Considerable structural damage.",
+        "Widespread damage. Very rare on land.",
+        "Severe widespread damage to structures.",
+      ];
+
+      return effects[Math.min(force, effects.length - 1)];
+    };
+
+    // Helper function for wind impact tags
+    const getWindImpactTags = (force) => {
+      const impacts = [];
+
+      // Add impacts based on force
+      if (force <= 2) {
+        impacts.push({ text: "Pleasant", color: "#22c55e" });
+        impacts.push({ text: "Good for walking", color: "#22c55e" });
+      }
+
+      if (force >= 3 && force <= 4) {
+        impacts.push({ text: "Good for sailing", color: "#3b82f6" });
+        impacts.push({ text: "Moderate cycling conditions", color: "#3b82f6" });
+      }
+
+      if (force >= 5 && force <= 6) {
+        impacts.push({ text: "Difficult cycling", color: "#f59e0b" });
+        impacts.push({ text: "Good for windsurfing", color: "#3b82f6" });
+        impacts.push({ text: "Small craft advisory", color: "#f59e0b" });
+      }
+
+      if (force >= 7) {
+        impacts.push({ text: "Dangerous for small boats", color: "#ef4444" });
+        impacts.push({ text: "Wind damage possible", color: "#ef4444" });
+        impacts.push({ text: "Difficult to walk", color: "#f59e0b" });
+      }
+
+      // Add wind chill impact if cold
+      if (force >= 4) {
+        impacts.push({ text: "Wind chill effect", color: "#60a5fa" });
+      }
+
+      return impacts;
+    };
+
+    return (
+      <div className="mt-8 bg-gradient-to-r from-sky-50 to-indigo-50 p-6 rounded-xl shadow">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+          <Wind className="h-6 w-6 mr-2 text-blue-600" />
+          Wind Conditions
+        </h3>
+
+        {/* Main Wind Info Dashboard */}
+        <div className="bg-white rounded-lg p-5 shadow-sm mb-6">
+          <div className="flex flex-wrap items-center justify-between">
+            {/* Current Wind Overview */}
+            <div className="flex items-center space-x-3">
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: `${windInfo.color}20`,
+                  borderColor: windInfo.color,
+                  borderWidth: "2px",
+                }}
+              >
+                <Wind className="h-8 w-8" style={{ color: windInfo.color }} />
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-gray-800">
+                  {city.windSpeed}
+                </div>
+                <div className="text-gray-500">{windInfo.text} Wind</div>
+              </div>
+            </div>
+
+            {/* Direction Indicator */}
+            <div className="flex flex-col items-center">
+              <div className="text-sm text-gray-500 mb-1">Direction</div>
+              <div className="relative w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border border-gray-200"></div>
+                <div className="z-10 absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 text-xs">
+                  N
+                </div>
+                <div className="z-10 absolute right-0 top-1/2 translate-x-1 -translate-y-1/2 text-xs">
+                  E
+                </div>
+                <div className="z-10 absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 text-xs">
+                  S
+                </div>
+                <div className="z-10 absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 text-xs">
+                  W
+                </div>
+
+                <ArrowUp
+                  className="h-10 w-10 text-blue-600 transform"
+                  style={{ transform: `rotate(${city.windDirection}deg)` }}
+                />
+              </div>
+              <div className="mt-1 text-sm font-medium">
+                {getWindDirection(city.windDirection)}
+              </div>
+            </div>
+
+            {/* Beaufort Scale */}
+            <div className="flex flex-col">
+              <div className="text-sm text-gray-500 mb-1">Beaufort Scale</div>
+              <div className="flex items-end space-x-1 h-10">
+                {Array(12)
+                  .fill(0)
+                  .map((_, i) => {
+                    const isActive = i < beaufort.force;
+
+                    // Color varies by strength
+                    const getBoxColor = (index) => {
+                      if (index < 3) return "bg-green-500"; // Light
+                      if (index < 7) return "bg-yellow-500"; // Moderate
+                      if (index < 10) return "bg-orange-500"; // Strong
+                      return "bg-red-500"; // Extreme
+                    };
+
+                    return (
+                      <div
+                        key={i}
+                        className={`w-3 rounded-sm transition-all ${
+                          isActive ? getBoxColor(i) : "bg-gray-200"
+                        }`}
+                        style={{ height: `${(i + 1) * 2 + 4}px` }}
+                      ></div>
+                    );
+                  })}
+              </div>
+              <div className="mt-1 text-sm font-medium">
+                Force {beaufort.force}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Wind Details Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Wind Description */}
+          <div className="bg-white rounded-lg p-4 shadow-sm h-full">
+            <div className="flex items-center mb-2">
+              <Info className="h-4 w-4 mr-2 text-blue-500" />
+              <div className="font-medium">Wind Characteristics</div>
+            </div>
+            <p className="text-gray-700 text-sm">
+              {beaufort.description} - {getWindEffect(beaufort.force)}
+            </p>
+          </div>
+
+          {/* Wind Gusts */}
+          <div className="bg-white rounded-lg p-4 shadow-sm h-full">
+            <div className="flex items-center mb-2">
+              <CloudFog className="h-4 w-4 mr-2 text-purple-500" />
+              <div className="font-medium">Wind Gusts</div>
+            </div>
+
+            {/* Gust meter */}
+            <div className="flex items-center justify-between">
+              <div className="text-gray-700 font-medium">{city.windSpeed}</div>
+              <div className="relative flex-grow mx-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="absolute top-0 left-0 h-full bg-purple-500"
+                  style={{ width: `${100 * gustFactor - 100}%` }}
+                ></div>
+              </div>
+              <div className="text-purple-700 font-medium">
+                {city.windGusts}
+              </div>
+            </div>
+
+            <div className="mt-2 text-xs text-gray-600">
+              {gustFactor > 1.5 ? (
+                <span className="flex items-center text-amber-600">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Strong gusts: {Math.round((gustFactor - 1) * 100)}% above
+                  average wind speed
+                </span>
+              ) : (
+                `Gusts are ${Math.round(
+                  (gustFactor - 1) * 100
+                )}% above average wind speed`
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Wind Impact */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <h4 className="font-medium mb-2 flex items-center">
+            <Activity className="h-4 w-4 mr-2 text-blue-500" />
+            Wind Impact
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {getWindImpactTags(beaufort.force).map((tag, i) => (
+              <span
+                key={i}
+                className="px-2 py-1 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: tag.color + "20",
+                  color: tag.color,
+                  border: `1px solid ${tag.color}`,
+                }}
+              >
+                {tag.text}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Loading screen
@@ -400,7 +685,7 @@ const WeatherPage = () => {
         <div className="mb-8 flex items-center space-x-2">
           <span className="text-xl font-bold text-green-500">&bull;</span>
           <p className="text-gray-600 text-sm italic">
-            Enter the area name in English . Try clicking one of the common
+            Enter the area name in English. Try clicking one of the common
             locations above.
           </p>
         </div>
@@ -408,6 +693,8 @@ const WeatherPage = () => {
         {/* Weather Cards */}
         {weatherData.map((city) => {
           const Icon = city.icon;
+          const beaufort = getBeaufortScale(parseInt(city.windSpeed));
+
           return (
             <div
               key={city.name}
@@ -536,6 +823,9 @@ const WeatherPage = () => {
                   </a>
                 </div>
               </div>
+
+              {/* Enhanced Wind Details Section - REPLACED THE OLD ONE */}
+              <EnhancedWindDetails city={{ ...city, beaufort }} />
 
               {/* Sunrise and Sunset */}
               <div className="mt-6 grid grid-cols-2 gap-4 max-w-md">
