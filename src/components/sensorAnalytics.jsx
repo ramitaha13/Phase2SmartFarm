@@ -1058,7 +1058,7 @@ const SensorAnalytics = () => {
                       <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
                       <Tooltip
                         contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                        formatter={(value) => [`${value}%`, "Soil Moisture"]}
+                        formatter={(value) => [`${value}`, "Soil Moisture"]}
                       />
                       <Area
                         type="monotone"
