@@ -393,13 +393,6 @@ const ManagerPage = () => {
                 <span>Contact Us</span>
               </button>
               {/* Mobile Logout Button */}
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white px-8 py-2.5 rounded-full font-medium hover:bg-green-700 hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
             </nav>
           </div>
         </div>

@@ -21,6 +21,7 @@ import {
   ArrowDown,
   Shield,
   Gauge,
+  AlertTriangle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -31,6 +32,16 @@ const WeatherPage = () => {
   const [cities, setCities] = useState([
     { name: "Karmiel", lat: 32.9186, lon: 35.2952 },
   ]);
+
+  // Add common Israeli locations that might be difficult to find
+  const commonLocations = [
+    { name: "Karmiel", lat: 32.9186, lon: 35.2952 },
+    { name: "Tel Aviv", lat: 32.0853, lon: 34.7818 },
+    { name: "Jerusalem", lat: 31.7683, lon: 35.2137 },
+    { name: "Haifa", lat: 32.794, lon: 34.9896 },
+    { name: "Beer Sheva", lat: 31.2516, lon: 34.7915 },
+  ];
+
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,6 +49,25 @@ const WeatherPage = () => {
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchError, setSearchError] = useState("");
+
+  // Israel boundary coordinates (approximate)
+  const ISRAEL_BOUNDS = {
+    north: 33.4, // Northern boundary
+    south: 29.5, // Southern boundary
+    east: 35.9, // Eastern boundary
+    west: 34.2, // Western boundary
+  };
+
+  // Check if coordinates are within Israel's boundaries
+  const isLocationInIsrael = (lat, lon) => {
+    return (
+      lat >= ISRAEL_BOUNDS.south &&
+      lat <= ISRAEL_BOUNDS.north &&
+      lon >= ISRAEL_BOUNDS.west &&
+      lon <= ISRAEL_BOUNDS.east
+    );
+  };
 
   const getWeatherIcon = (code) => {
     if (code >= 0 && code <= 1) return Sun;
@@ -77,7 +107,6 @@ const WeatherPage = () => {
       setIsRefreshing(true);
       const weatherPromises = citiesArray.map(async (city) => {
         // Enhanced API call with more parameters
-        // Simplified the API call to ensure compatibility
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,pressure_msl,apparent_temperature,precipitation,cloud_cover,wind_direction_10m,wind_gusts_10m,uv_index,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,precipitation_sum,wind_speed_10m_max&hourly=temperature_2m&wind_speed_unit=kmh&timezone=IST`;
         console.log("Fetching weather data from:", url);
         const response = await fetch(url);
@@ -171,45 +200,75 @@ const WeatherPage = () => {
     navigate(-1);
   };
 
-  // Prevent non-English letters in the search field
+  // UPDATED: Input handler - allow letters, symbols, and spaces
+  // Specifically allowing symbols requested: !@#$%^&*()_<>?"|:{}~
   const handleInputChange = (e) => {
-    const onlyEnglish = e.target.value.replace(/[^a-zA-Z\s]+/g, "");
-    setSearchTerm(onlyEnglish);
+    // Accept all letters, numbers, spaces, and common symbols
+    // Avoid removing symbols that might be part of location names
+    setSearchTerm(e.target.value);
+    setSearchError("");
   };
 
-  // Handle search form submission
+  // Check common locations first, then use API
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
 
+    // First check our predefined common locations
+    const searchTermLower = searchTerm.toLowerCase().trim();
+    const matchedLocation = commonLocations.find(
+      (location) => location.name.toLowerCase() === searchTermLower
+    );
+
+    if (matchedLocation) {
+      setCities([matchedLocation]);
+      setLoading(true);
+      fetchWeatherDataForCities([matchedLocation]);
+      return;
+    }
+
     try {
       setLoading(true);
+      setSearchError("");
+
       // Use Open-Meteo's free geocoding API
       const response = await fetch(
         `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
           searchTerm
-        )}`
+        )}&count=10`
       );
       const data = await response.json();
 
       if (data.results && data.results.length > 0) {
-        const result = data.results[0];
-        const newCity = {
-          name: result.name,
-          lat: result.latitude,
-          lon: result.longitude,
-        };
+        // Filter to only Israeli locations
+        const israeliLocations = data.results.filter(
+          (location) =>
+            location.country === "Israel" ||
+            isLocationInIsrael(location.latitude, location.longitude)
+        );
 
-        // Update cities state with the new city
-        setCities([newCity]);
-        // Fetch weather data for the new city
-        fetchWeatherDataForCities([newCity]);
+        if (israeliLocations.length > 0) {
+          const result = israeliLocations[0];
+          const newCity = {
+            name: result.name,
+            lat: result.latitude,
+            lon: result.longitude,
+          };
+
+          // Update cities state with the new city
+          setCities([newCity]);
+          // Fetch weather data for the new city
+          fetchWeatherDataForCities([newCity]);
+        } else {
+          setSearchError("Please enter an Israeli location only.");
+          setLoading(false);
+        }
       } else {
-        setError("No matching location found.");
+        setSearchError("No matching location found in Israel.");
         setLoading(false);
       }
     } catch (err) {
-      setError("Error fetching location data.");
+      setSearchError("Error fetching location data.");
       setLoading(false);
     }
   };
@@ -270,7 +329,7 @@ const WeatherPage = () => {
               <span>Back</span>
             </button>
             <h1 className="text-2xl font-bold text-gray-900">
-              Weather Forecast
+              Israel Weather Forecast
             </h1>
           </div>
         </div>
@@ -293,27 +352,56 @@ const WeatherPage = () => {
         </div>
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-6 flex">
-          <input
-            type="text"
-            placeholder="Search for an area..."
-            className="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none"
-            value={searchTerm}
-            onChange={handleInputChange}
-          />
-          <button
-            type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded-r-lg hover:bg-green-700"
-          >
-            Search
-          </button>
+        <form onSubmit={handleSearch} className="mb-6 flex flex-col">
+          <div className="flex">
+            <input
+              type="text"
+              placeholder="Search for an area in Israel..."
+              className="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none"
+              value={searchTerm}
+              onChange={handleInputChange}
+            />
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-4 py-2 rounded-r-lg hover:bg-green-700"
+            >
+              Search
+            </button>
+          </div>
+          {searchError && (
+            <div className="mt-2 text-red-500 flex items-center">
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              <span className="text-sm">{searchError}</span>
+            </div>
+          )}
         </form>
+
+        {/* Common locations quick access */}
+        <div className="mb-6">
+          <p className="text-sm text-gray-600 mb-2">Common locations:</p>
+          <div className="flex flex-wrap gap-2">
+            {commonLocations.map((location) => (
+              <button
+                key={location.name}
+                onClick={() => {
+                  setCities([location]);
+                  setLoading(true);
+                  fetchWeatherDataForCities([location]);
+                }}
+                className="bg-gray-100 hover:bg-gray-200 text-sm px-3 py-1 rounded-full text-gray-700"
+              >
+                {location.name}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Instruction under the search bar */}
         <div className="mb-8 flex items-center space-x-2">
           <span className="text-xl font-bold text-green-500">&bull;</span>
           <p className="text-gray-600 text-sm italic">
-            Just write the area in English.
+            Enter the area name in English . Try clicking one of the common
+            locations above.
           </p>
         </div>
 
@@ -330,7 +418,7 @@ const WeatherPage = () => {
                 <div className="flex items-center space-x-3">
                   <MapPin className="h-6 w-6 text-gray-600" />
                   <h2 className="text-xl font-bold text-gray-900">
-                    {city.name}
+                    {city.name}, Israel
                   </h2>
                 </div>
                 <div className="text-sm text-gray-500">{city.lastUpdated}</div>
