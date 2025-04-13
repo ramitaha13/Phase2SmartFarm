@@ -20,6 +20,7 @@ import {
   ArrowRight,
   BarChart,
   Bot, // Changed Robot to Bot which is available in lucide-react
+  Gauge,
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -516,7 +517,7 @@ const ManagerPage = () => {
             </div>
           </div>
 
-          {/* Environment Monitoring Section - MODIFIED */}
+          {/* Environment Monitoring Section - UPDATED with Air Humidity and Pressure */}
           <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">
@@ -529,7 +530,7 @@ const ManagerPage = () => {
                 View Details <ArrowRight className="h-4 w-4 ml-1" />
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {/* Temperature */}
               <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                 <Thermometer className="h-8 w-8 text-red-500" />
@@ -549,6 +550,22 @@ const ManagerPage = () => {
                 <Sprout className="h-8 w-8 text-green-500" />
                 <div className="text-lg font-medium text-gray-800">
                   Soil Moisture
+                </div>
+              </div>
+
+              {/* Air Humidity - ADDED */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <Droplets className="h-8 w-8 text-blue-500" />
+                <div className="text-lg font-medium text-gray-800">
+                  Air Humidity
+                </div>
+              </div>
+
+              {/* Air Pressure - ADDED */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <Gauge className="h-8 w-8 text-purple-500" />
+                <div className="text-lg font-medium text-gray-800">
+                  Air Pressure
                 </div>
               </div>
             </div>
