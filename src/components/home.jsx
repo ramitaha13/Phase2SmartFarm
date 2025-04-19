@@ -73,10 +73,10 @@ const SmartFarmLanding = () => {
               </span>
             </div>
             <div className="flex items-center space-x-6">
-              {/* New Share Button Styling with auto-animation on mobile - rounded like login button */}
+              {/* Share Button - Made smaller */}
               <button
                 onClick={handleShare}
-                className="relative inline-flex items-center justify-center px-6 py-2.5 overflow-hidden font-medium transition-all bg-white rounded-full hover:bg-white group"
+                className="relative inline-flex items-center justify-center px-5 py-2 overflow-hidden font-medium transition-all bg-white rounded-full hover:bg-white group"
                 style={{
                   border: "1px solid green",
                   boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
@@ -84,7 +84,7 @@ const SmartFarmLanding = () => {
               >
                 <span className="relative flex items-center text-green-600 transition-all duration-300 group-hover:text-white">
                   Share
-                  <Share2 className="h-5 w-5 ml-2" />
+                  <Share2 className="h-4 w-4 ml-1.5" />
                 </span>
                 <div className="absolute flex justify-around top-0 left-0 w-full h-0 transition-all duration-500 border-green-600 group-hover:h-full group-hover:opacity-100 mobile-animate-share rounded-full">
                   <div className="h-full w-full flex justify-center items-center bg-green-600">
