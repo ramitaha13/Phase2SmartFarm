@@ -375,7 +375,7 @@ const SmartFarmLanding = () => {
               name="Rami Taha"
               phone="053-733-3343"
               email="taharami14@gmail.com"
-              imagePath="/src/assets/3.jpeg"
+              imagePath="src/assets/3.jpeg"
               birthdate="13/9/1999"
               additionalDetails={[
                 "From Kabul",
@@ -389,7 +389,7 @@ const SmartFarmLanding = () => {
               name="Kareem Zeedan"
               phone="055-665-7503"
               email="Kareemzeedan@gmail.com"
-              imagePath="/src/assets/4.jpeg"
+              imagePath="src/assets/4.jpeg"
             />
           </div>
         </div>
