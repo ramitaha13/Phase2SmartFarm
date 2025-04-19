@@ -114,7 +114,7 @@ const ContactCard = ({
       <div className="md:hidden mt-4 text-center">
         <div className="text-xs text-green-600 font-medium flex items-center justify-center">
           <span className="inline-block w-3 h-3 bg-green-100 rounded-full mr-1 animate-pulse"></span>
-          Hold to know more about this person
+          Hold card to know more about our team member
         </div>
       </div>
 
@@ -384,9 +384,6 @@ const SmartFarmLanding = () => {
               Need assistance? Our experts are here to help. Feel free to
               contact us by phone or email for any questions about our smart
               farming solutions, technical support, or consultation.
-            </p>
-            <p className="text-sm text-green-600 font-medium italic md:hidden">
-              Hold card to know more about our team members
             </p>
           </div>
 
