@@ -37,6 +37,7 @@ const ContactCard = ({
   phone,
   email,
   imagePath,
+  birthdate,
   additionalDetails = [],
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -122,11 +123,17 @@ const ContactCard = ({
             </button>
 
             <div className="flex flex-col items-center">
-              <div className="w-32 h-32 rounded-full overflow-hidden mb-4">
+              <div className="w-32 h-32 rounded-full overflow-hidden mb-4 border-2 border-green-100">
                 <img
                   src={imagePath}
                   alt={name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error("Image failed to load:", imagePath);
+                    e.target.onerror = null;
+                    e.target.src =
+                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='40' r='20' fill='%23e2e8f0'/%3E%3Ccircle cx='50' cy='100' r='40' fill='%23e2e8f0'/%3E%3C/svg%3E";
+                  }}
                 />
               </div>
 
@@ -135,9 +142,15 @@ const ContactCard = ({
               </h3>
 
               {/* Additional Details */}
-              {additionalDetails.length > 0 && (
+              {(additionalDetails.length > 0 || birthdate) && (
                 <div className="w-full bg-green-50 rounded-lg p-4 mb-4">
                   <ul className="space-y-2">
+                    {birthdate && (
+                      <li className="text-gray-700 flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full mt-2 mr-2"></span>
+                        Age: {calculateAge(birthdate)}
+                      </li>
+                    )}
                     {additionalDetails.map((detail, index) => (
                       <li
                         key={index}
@@ -362,9 +375,9 @@ const SmartFarmLanding = () => {
               name="Rami Taha"
               phone="053-733-3343"
               email="taharami14@gmail.com"
-              imagePath="src/assets/3.jpeg"
+              imagePath="/src/assets/3.jpeg"
+              birthdate="13/9/1999"
               additionalDetails={[
-                `Age: ${calculateAge("13/9/1999")}`,
                 "From Kabul",
                 "Software engineering student",
                 "Fourth year at Braude College",
@@ -376,7 +389,7 @@ const SmartFarmLanding = () => {
               name="Kareem Zeedan"
               phone="055-665-7503"
               email="Kareemzeedan@gmail.com"
-              imagePath="src/assets/4.jpeg"
+              imagePath="/src/assets/4.jpeg"
             />
           </div>
         </div>
