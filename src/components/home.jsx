@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Leaf, Share2, Phone, Mail, X } from "lucide-react";
+import { Leaf, Share2, Phone, Mail, X, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import RamiPhoto from "/src/assets/3.jpeg";
+import KareemPhoto from "/src/assets/4.jpeg";
 
 // Function to calculate age from birthdate in format DD/MM/YYYY
 const calculateAge = (birthdate) => {
@@ -25,6 +27,11 @@ const calculateAge = (birthdate) => {
 
   return age;
 };
+
+// Import images directly to ensure they're properly bundled
+// Add these at the top of your file after the other imports
+import ramiImage from "../assets/3.jpeg";
+import kareemImage from "../assets/4.jpeg";
 
 const Alert = ({ children }) => (
   <div className="fixed top-4 left-4 bg-green-100 border border-green-600 text-green-800 p-4 rounded-lg shadow-lg animate-fade-in">
@@ -107,7 +114,7 @@ const ContactCard = ({
       <div className="md:hidden mt-4 text-center">
         <div className="text-xs text-green-600 font-medium flex items-center justify-center">
           <span className="inline-block w-3 h-3 bg-green-100 rounded-full mr-1 animate-pulse"></span>
-          Hold card to know more about our team member
+          Hold to know more about this person
         </div>
       </div>
 
@@ -123,18 +130,29 @@ const ContactCard = ({
             </button>
 
             <div className="flex flex-col items-center">
-              <div className="w-32 h-32 rounded-full overflow-hidden mb-4 border-2 border-green-100">
-                <img
-                  src={imagePath}
-                  alt={name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    console.error("Image failed to load:", imagePath);
-                    e.target.onerror = null;
-                    e.target.src =
-                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='40' r='20' fill='%23e2e8f0'/%3E%3Ccircle cx='50' cy='100' r='40' fill='%23e2e8f0'/%3E%3C/svg%3E";
-                  }}
-                />
+              <div className="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-green-100">
+                {imagePath ? (
+                  <img
+                    src={imagePath}
+                    alt={name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error("Image failed to load:", imagePath);
+                      e.target.onerror = null;
+                      // Replace with User icon
+                      e.target.parentNode.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-green-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      </div>`;
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-green-50">
+                    <User className="h-12 w-12 text-green-600" />
+                  </div>
+                )}
               </div>
 
               <h3 className="text-2xl font-bold text-center text-gray-900 mb-4">
@@ -367,6 +385,9 @@ const SmartFarmLanding = () => {
               contact us by phone or email for any questions about our smart
               farming solutions, technical support, or consultation.
             </p>
+            <p className="text-sm text-green-600 font-medium italic md:hidden">
+              Hold card to know more about our team members
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -375,7 +396,7 @@ const SmartFarmLanding = () => {
               name="Rami Taha"
               phone="053-733-3343"
               email="taharami14@gmail.com"
-              imagePath="src/assets/3.jpeg"
+              imagePath={RamiPhoto}
               birthdate="13/9/1999"
               additionalDetails={[
                 "From Kabul",
@@ -389,7 +410,7 @@ const SmartFarmLanding = () => {
               name="Kareem Zeedan"
               phone="055-665-7503"
               email="Kareemzeedan@gmail.com"
-              imagePath="src/assets/4.jpeg"
+              imagePath={KareemPhoto}
             />
           </div>
         </div>
