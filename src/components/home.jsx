@@ -49,14 +49,17 @@ const ContactCard = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [touchTimer, setTouchTimer] = useState(null);
+  const [isHolding, setIsHolding] = useState(false); // New state for tracking hold status
 
   // Handle touch start - start timer (mobile only)
   const handleTouchStart = () => {
     // Only on mobile devices
     if (window.innerWidth <= 768) {
+      setIsHolding(true); // Set holding state to true
       const timer = setTimeout(() => {
         setIsExpanded(true);
-      }, 500); // 500ms hold to expand
+        setIsHolding(false); // Reset holding state when expanded
+      }, 1500); // 1500ms (1.5 seconds) hold to expand - increased from 500ms
 
       setTouchTimer(timer);
     }
@@ -68,6 +71,7 @@ const ContactCard = ({
       clearTimeout(touchTimer);
       setTouchTimer(null);
     }
+    setIsHolding(false); // Reset holding state
   };
 
   // Close expanded card
@@ -83,6 +87,31 @@ const ContactCard = ({
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
+      {/* Hold Indicator - Only shows when holding */}
+      {isHolding && (
+        <div className="absolute inset-0 bg-black bg-opacity-10 rounded-2xl flex items-center justify-center z-10">
+          <div className="bg-white rounded-full p-3 shadow-lg">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-green-600 animate-pulse"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+              <path d="M12 13v5"></path>
+              <path d="M9 16l3 3 3-3"></path>
+            </svg>
+          </div>
+        </div>
+      )}
+
       {/* Regular Card Content */}
       <h3 className="text-2xl font-bold text-gray-900 mb-6">{name}</h3>
       <div className="space-y-4">
