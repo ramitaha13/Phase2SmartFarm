@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   X,
   Trash2,
+  Layers, // Added Layers icon for task count
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -48,6 +49,14 @@ const TasksPage = () => {
   const [availableWorkers, setAvailableWorkers] = useState([]);
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Task statistics
+  const [taskStats, setTaskStats] = useState({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+  });
 
   // Fetch user data from local storage and then from Firestore
   useEffect(() => {
@@ -88,6 +97,33 @@ const TasksPage = () => {
       fetchTasks();
     }
   }, [userData]);
+
+  // Update task statistics whenever tasks change
+  useEffect(() => {
+    if (tasks.length > 0) {
+      calculateTaskStats();
+    }
+  }, [tasks]);
+
+  // Calculate task statistics
+  const calculateTaskStats = () => {
+    const pendingCount = tasks.filter(
+      (task) => task.status === "pending"
+    ).length;
+    const inProgressCount = tasks.filter(
+      (task) => task.status === "in-progress"
+    ).length;
+    const completedCount = tasks.filter(
+      (task) => task.status === "completed"
+    ).length;
+
+    setTaskStats({
+      total: tasks.length,
+      pending: pendingCount,
+      inProgress: inProgressCount,
+      completed: completedCount,
+    });
+  };
 
   // Fetch workers (for manager to assign tasks)
   const fetchWorkers = async () => {
@@ -536,6 +572,73 @@ const TasksPage = () => {
         <h1 className="text-2xl font-bold text-gray-900 mb-6">
           Task Management
         </h1>
+
+        {/* Task Count Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* Total Tasks Card */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-purple-500">
+            <div className="flex items-center">
+              <div className="p-3 bg-purple-100 rounded-full mr-4">
+                <Layers className="h-6 w-6 text-purple-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">
+                  Total Tasks
+                </h3>
+                <p className="text-2xl font-bold text-gray-900">
+                  {taskStats.total}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Pending Tasks Card */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-yellow-500">
+            <div className="flex items-center">
+              <div className="p-3 bg-yellow-100 rounded-full mr-4">
+                <Clock className="h-6 w-6 text-yellow-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Pending</h3>
+                <p className="text-2xl font-bold text-gray-900">
+                  {taskStats.pending}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* In Progress Tasks Card */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-500">
+            <div className="flex items-center">
+              <div className="p-3 bg-blue-100 rounded-full mr-4">
+                <AlertCircle className="h-6 w-6 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">
+                  In Progress
+                </h3>
+                <p className="text-2xl font-bold text-gray-900">
+                  {taskStats.inProgress}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Completed Tasks Card */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
+            <div className="flex items-center">
+              <div className="p-3 bg-green-100 rounded-full mr-4">
+                <Check className="h-6 w-6 text-green-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Completed</h3>
+                <p className="text-2xl font-bold text-gray-900">
+                  {taskStats.completed}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Search and Filter Section */}
         <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6">
