@@ -18,6 +18,7 @@ import Sensors from "../src/components/sensors.jsx";
 import Irrigation from "../src/components/irrigation.jsx";
 import SensorAnalytics from "../src/components/sensorAnalytics.jsx";
 import RobotController from "../src/components/robotController.jsx";
+import Farmerassistant from "../src/components/farmerassistant.jsx";
 
 const router = createBrowserRouter([
   {
@@ -137,6 +138,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <RobotController />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/farmerassistant",
+    element: (
+      <ProtectedRoute>
+        <Farmerassistant />
       </ProtectedRoute>
     ),
   },
