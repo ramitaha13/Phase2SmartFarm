@@ -19,8 +19,9 @@ import {
   AlertCircle,
   ArrowRight,
   BarChart,
-  Bot, // Changed Robot to Bot which is available in lucide-react
+  Bot,
   Gauge,
+  Lightbulb, // Added for Farmer Assistant icon
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -316,6 +317,12 @@ const ManagerPage = () => {
     setIsMobileMenuOpen(false);
   };
 
+  // Add handler for Farmer Assistant button
+  const handleFarmerAssistantClick = () => {
+    navigate("/farmerassistant");
+    setIsMobileMenuOpen(false);
+  };
+
   // 1) If still loading, show a loading state
   if (loading) {
     return (
@@ -454,6 +461,14 @@ const ManagerPage = () => {
                 <Bot className="h-5 w-5" />
                 <span>Robot Controller</span>
               </button>
+              {/* New Farmer Assistant button for mobile menu */}
+              <button
+                onClick={handleFarmerAssistantClick}
+                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+              >
+                <Lightbulb className="h-5 w-5" />
+                <span>Farmer Assistant</span>
+              </button>
               <button
                 onClick={handleWeatherClick}
                 className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
@@ -529,6 +544,14 @@ const ManagerPage = () => {
             >
               <Bot className="h-5 w-5" />
               <span>Robot Controller</span>
+            </button>
+            {/* New Farmer Assistant button for desktop sidebar */}
+            <button
+              onClick={handleFarmerAssistantClick}
+              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+            >
+              <Lightbulb className="h-5 w-5" />
+              <span>Farmer Assistant</span>
             </button>
             <button
               onClick={handleWeatherClick}

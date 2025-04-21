@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 
-const SmartFarmChatAssistant = () => {
+const FarmerAssistant = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -8,7 +11,7 @@ const SmartFarmChatAssistant = () => {
   const chatContainerRef = useRef(null);
   const inputRef = useRef(null); // Reference for the textarea input
 
-  // Define API endpoint - corrected URL based on deployment
+  // Define API endpoint
   const API_URL = "https://serverchatai.onrender.com/api/chat";
 
   useEffect(() => {
@@ -128,140 +131,139 @@ const SmartFarmChatAssistant = () => {
     }
   };
 
-  const handleBack = () => {
-    // You can implement navigation logic here
-    // For example: window.history.back() or using React Router
-    console.log("Back button clicked");
-    // If using React Router, you could do:
-    // history.goBack() or navigate(-1)
+  const handleBackClick = () => {
+    navigate("/managerPage");
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-screen flex flex-col p-4">
-      <div className="bg-white rounded-lg shadow-lg flex flex-col h-full overflow-hidden border border-green-200">
-        {/* Header */}
-        <div className="p-4 border-b flex justify-between items-center bg-green-50">
-          <div className="flex items-center space-x-3">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header - Using the same styling as TasksPage */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
             <button
-              onClick={handleBack}
-              className="flex items-center justify-center px-3 py-1.5 text-green-700 hover:text-green-900 bg-green-100 hover:bg-green-200 rounded-lg border border-green-300"
+              onClick={handleBackClick}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="ml-1">Back</span>
+              <ChevronLeft className="h-5 w-5" />
+              <span>Back</span>
             </button>
-            <h1 className="text-xl font-bold text-green-800">
-              Smart Farm Assistant / עוזר חווה חכמה
+            <h1 className="text-xl font-bold text-gray-900">
+              Farmer Assistant
             </h1>
           </div>
-          <button
-            onClick={clearChat}
-            className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 border border-red-300 hover:border-red-500 rounded"
-          >
-            Clear Chat / נקה צ'אט
-          </button>
         </div>
+      </div>
 
-        {/* Chat messages container */}
-        <div
-          ref={chatContainerRef}
-          className="flex-1 p-4 overflow-y-auto space-y-4 bg-green-50/30"
-        >
-          {messages.map((message, index) => {
-            const isHebr = isHebrew(message.content);
-            return (
-              <div
-                key={index}
-                className={`flex ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto p-4 h-[calc(100vh-80px)]">
+        <div className="bg-white rounded-lg shadow-lg flex flex-col h-full overflow-hidden border border-green-200">
+          {/* Chat Header */}
+          <div className="p-4 border-b flex justify-between items-center bg-green-50">
+            <div className="flex items-center space-x-3">
+              <h1 className="text-xl font-bold text-green-800">
+                Smart Farm Assistant / עוזר חווה חכמה
+              </h1>
+            </div>
+            <button
+              onClick={clearChat}
+              className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 border border-red-300 hover:border-red-500 rounded"
+            >
+              Clear Chat / נקה צ'אט
+            </button>
+          </div>
+
+          {/* Chat messages container */}
+          <div
+            ref={chatContainerRef}
+            className="flex-1 p-4 overflow-y-auto space-y-4 bg-green-50/30"
+          >
+            {messages.map((message, index) => {
+              const isHebr = isHebrew(message.content);
+              return (
                 <div
-                  className={`max-w-2xl px-4 py-2 rounded-lg ${
-                    message.role === "user"
-                      ? "bg-green-600 text-white"
-                      : "bg-white border border-green-200 text-gray-800"
+                  key={index}
+                  className={`flex ${
+                    message.role === "user" ? "justify-end" : "justify-start"
                   }`}
-                  dir={isHebr ? "rtl" : "ltr"}
                 >
                   <div
-                    className={`whitespace-pre-wrap font-sans ${
-                      isHebr ? "text-right" : "text-left"
+                    className={`max-w-2xl px-4 py-2 rounded-lg ${
+                      message.role === "user"
+                        ? "bg-green-600 text-white"
+                        : "bg-white border border-green-200 text-gray-800"
                     }`}
+                    dir={isHebr ? "rtl" : "ltr"}
                   >
-                    {renderTextWithGreenBold(message.content)}
+                    <div
+                      className={`whitespace-pre-wrap font-sans ${
+                        isHebr ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {renderTextWithGreenBold(message.content)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white px-4 py-2 rounded-lg border border-green-200">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+                    <div
+                      className="w-2 h-2 bg-green-500 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.2s" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-green-500 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.4s" }}
+                    ></div>
                   </div>
                 </div>
               </div>
-            );
-          })}
+            )}
 
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-white px-4 py-2 rounded-lg border border-green-200">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
-                  <div
-                    className="w-2 h-2 bg-green-500 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-green-500 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.4s" }}
-                  ></div>
+            {error && (
+              <div className="flex justify-center">
+                <div className="text-red-600 bg-red-50 px-4 py-2 rounded-lg border border-red-200">
+                  Error: {error}
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {error && (
-            <div className="flex justify-center">
-              <div className="text-red-600 bg-red-50 px-4 py-2 rounded-lg border border-red-200">
-                Error: {error}
-              </div>
+          {/* Input area */}
+          <div className="p-4 border-t border-green-200 bg-green-50/50">
+            <div className="flex space-x-2">
+              <textarea
+                ref={inputRef}
+                value={inputText}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyPress}
+                placeholder="Type your message... / הקלד את ההודעה שלך..."
+                rows="1"
+                className="flex-1 resize-none border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[42px] max-h-[200px]"
+                disabled={isLoading}
+                style={{ overflowY: "auto" }}
+                dir={isHebrew(inputText) ? "rtl" : "ltr"}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={isLoading || !inputText.trim()}
+                className={`
+                  px-4 py-2 rounded-lg text-white font-medium
+                  ${
+                    isLoading || !inputText.trim()
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  }
+                `}
+              >
+                Send
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* Input area */}
-        <div className="p-4 border-t border-green-200 bg-green-50/50">
-          <div className="flex space-x-2">
-            <textarea
-              ref={inputRef} // Add ref to the textarea
-              value={inputText}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyPress}
-              placeholder="Type your message... / הקלד את ההודעה שלך..."
-              rows="1"
-              className="flex-1 resize-none border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[42px] max-h-[200px]"
-              disabled={isLoading}
-              style={{ overflowY: "auto" }}
-              dir={isHebrew(inputText) ? "rtl" : "ltr"}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={isLoading || !inputText.trim()}
-              className={`
-                px-4 py-2 rounded-lg text-white font-medium
-                ${
-                  isLoading || !inputText.trim()
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                }
-              `}
-            >
-              Send
-            </button>
           </div>
         </div>
       </div>
@@ -269,4 +271,4 @@ const SmartFarmChatAssistant = () => {
   );
 };
 
-export default SmartFarmChatAssistant;
+export default FarmerAssistant;
