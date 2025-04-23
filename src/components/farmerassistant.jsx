@@ -194,7 +194,7 @@ const FarmerAssistant = () => {
   };
 
   const handleBackClick = () => {
-    navigate("/managerPage");
+    navigate(-1);
   };
 
   return (

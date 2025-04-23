@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Cloud,
   MessageSquare,
-  Settings,
   Menu,
   X,
   Thermometer,
@@ -19,6 +18,10 @@ import {
   ArrowRight,
   Clock,
   AlertCircle,
+  BarChart, // Added for SensorAnalytics
+  Bot, // Added for RobotController
+  Gauge, // Added for Air Pressure
+  Lightbulb, // Added for Farmer Assistant
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -241,11 +244,6 @@ const UserPage = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const handleSettingsClick = () => {
-    navigate("/settings");
-    setIsMobileMenuOpen(false);
-  };
-
   const handleWeatherClick = () => {
     navigate("/weatherPage");
     setIsMobileMenuOpen(false);
@@ -253,6 +251,27 @@ const UserPage = () => {
 
   const handleTasksClick = () => {
     navigate("/workerTasksPage");
+    setIsMobileMenuOpen(false);
+  };
+
+  // New handlers for additional navigation options
+  const handleSensorsClick = () => {
+    navigate("/sensors");
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleSensorAnalyticsClick = () => {
+    navigate("/sensorAnalytics");
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleRobotControllerClick = () => {
+    navigate("/robotController");
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleFarmerAssistantClick = () => {
+    navigate("/farmerassistant");
     setIsMobileMenuOpen(false);
   };
 
@@ -425,6 +444,35 @@ const UserPage = () => {
                   <span>Tasks</span>
                 </button>
               )}
+              {/* New buttons for mobile menu */}
+              <button
+                onClick={handleSensorsClick}
+                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+              >
+                <Thermometer className="h-5 w-5" />
+                <span>Sensors</span>
+              </button>
+              <button
+                onClick={handleSensorAnalyticsClick}
+                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+              >
+                <BarChart className="h-5 w-5" />
+                <span>Sensor Analytics</span>
+              </button>
+              <button
+                onClick={handleRobotControllerClick}
+                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+              >
+                <Bot className="h-5 w-5" />
+                <span>Robot Controller</span>
+              </button>
+              <button
+                onClick={handleFarmerAssistantClick}
+                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+              >
+                <Lightbulb className="h-5 w-5" />
+                <span>Farmer Assistant</span>
+              </button>
               <button
                 onClick={handleWeatherClick}
                 className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
@@ -438,13 +486,6 @@ const UserPage = () => {
               >
                 <MessageSquare className="h-5 w-5" />
                 <span>Contact Us</span>
-              </button>
-              <button
-                onClick={handleSettingsClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <Settings className="h-5 w-5" />
-                <span>Settings</span>
               </button>
               {/* Mobile Logout Button */}
               <button
@@ -480,6 +521,35 @@ const UserPage = () => {
                 <span>Tasks</span>
               </button>
             )}
+            {/* New buttons for desktop sidebar */}
+            <button
+              onClick={handleSensorsClick}
+              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+            >
+              <Thermometer className="h-5 w-5" />
+              <span>Sensors</span>
+            </button>
+            <button
+              onClick={handleSensorAnalyticsClick}
+              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+            >
+              <BarChart className="h-5 w-5" />
+              <span>Sensor Analytics</span>
+            </button>
+            <button
+              onClick={handleRobotControllerClick}
+              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+            >
+              <Bot className="h-5 w-5" />
+              <span>Robot Controller</span>
+            </button>
+            <button
+              onClick={handleFarmerAssistantClick}
+              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+            >
+              <Lightbulb className="h-5 w-5" />
+              <span>Farmer Assistant</span>
+            </button>
             <button
               onClick={handleWeatherClick}
               className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
@@ -493,13 +563,6 @@ const UserPage = () => {
             >
               <MessageSquare className="h-5 w-5" />
               <span>Contact Us</span>
-            </button>
-            <button
-              onClick={handleSettingsClick}
-              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-            >
-              <Settings className="h-5 w-5" />
-              <span>Settings</span>
             </button>
           </nav>
         </aside>
@@ -537,6 +600,60 @@ const UserPage = () => {
                 <div className="flex flex-col md:flex-row items-center space-y-2 md:space-x-6 text-gray-600">
                   <span>{userData ? userData.email : ""}</span>
                   <span>{userData ? userData.numberphone : ""}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Environment Monitoring Section - UPDATED to match ManagerPage */}
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">
+                Environment Monitoring
+              </h2>
+              <button
+                onClick={() => navigate("/sensors")}
+                className="text-green-600 text-sm hover:text-green-800 flex items-center"
+              >
+                View Details <ArrowRight className="h-4 w-4 ml-1" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {/* Temperature */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <Thermometer className="h-8 w-8 text-red-500" />
+                <div className="text-lg font-medium text-gray-800">
+                  Temperature
+                </div>
+              </div>
+
+              {/* Light */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <Sun className="h-8 w-8 text-yellow-500" />
+                <div className="text-lg font-medium text-gray-800">Light</div>
+              </div>
+
+              {/* Soil Moisture */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <Sprout className="h-8 w-8 text-green-500" />
+                <div className="text-lg font-medium text-gray-800">
+                  Soil Moisture
+                </div>
+              </div>
+
+              {/* Air Humidity */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <Droplets className="h-8 w-8 text-blue-500" />
+                <div className="text-lg font-medium text-gray-800">
+                  Air Humidity
+                </div>
+              </div>
+
+              {/* Air Pressure */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <Gauge className="h-8 w-8 text-purple-500" />
+                <div className="text-lg font-medium text-gray-800">
+                  Air Pressure
                 </div>
               </div>
             </div>
@@ -645,47 +762,6 @@ const UserPage = () => {
               </div>
             </div>
           )}
-
-          {/* Environment Monitoring Section */}
-          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
-              Environment Monitoring
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {/* Temperature */}
-              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                <Thermometer className="h-8 w-8 text-red-500" />
-                <div>
-                  <div className="text-sm text-gray-600">Temperature</div>
-                  <div className="text-2xl font-bold">25.6°C</div>
-                </div>
-              </div>
-              {/* Humidity */}
-              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                <Droplets className="h-8 w-8 text-blue-500" />
-                <div>
-                  <div className="text-sm text-gray-600">Humidity</div>
-                  <div className="text-2xl font-bold">65%</div>
-                </div>
-              </div>
-              {/* Light */}
-              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                <Sun className="h-8 w-8 text-yellow-500" />
-                <div>
-                  <div className="text-sm text-gray-600">Light</div>
-                  <div className="text-2xl font-bold">850 lux</div>
-                </div>
-              </div>
-              {/* Soil Moisture */}
-              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                <Sprout className="h-8 w-8 text-green-500" />
-                <div>
-                  <div className="text-sm text-gray-600">Soil Moisture</div>
-                  <div className="text-2xl font-bold">78%</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </main>
       </div>
     </div>
