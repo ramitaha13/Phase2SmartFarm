@@ -19,6 +19,7 @@ import Irrigation from "../src/components/irrigation.jsx";
 import SensorAnalytics from "../src/components/sensorAnalytics.jsx";
 import RobotController from "../src/components/robotController.jsx";
 import Farmerassistant from "../src/components/farmerassistant.jsx";
+import Geminichat from "../src/components/geminichat.jsx";
 
 const router = createBrowserRouter([
   {
@@ -148,6 +149,10 @@ const router = createBrowserRouter([
         <Farmerassistant />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/geminichat",
+    element: <Geminichat />,
   },
 ]);
 
