@@ -36,6 +36,10 @@ const GeminiSmartFarm = () => {
   const API_URL =
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
+  // Welcome message for all new conversations
+  const welcomeMessageText =
+    "Welcome to Smart Farm AI Assistant! I'm powered by Google's Gemini AI and ready to help with your farming questions. What would you like to know about today?";
+
   // Farming-related quick suggestion buttons
   const suggestions = [
     "Best crops for this season?",
@@ -66,8 +70,7 @@ const GeminiSmartFarm = () => {
     // Initial welcome message if no conversation was loaded
     const welcomeMessage = {
       role: "assistant",
-      content:
-        "Welcome to Smart Farm AI Assistant! I'm powered by Google's Gemini AI and ready to help with your farming questions. What would you like to know about today?",
+      content: welcomeMessageText,
     };
     setTypingMessage(welcomeMessage);
     setTypingIndex(0);
@@ -128,24 +131,37 @@ const GeminiSmartFarm = () => {
     stopAnyOngoingTyping();
 
     const date = new Date();
+
+    // Create welcome message if not provided
+    const welcomeMessage = initialMessage || {
+      role: "assistant",
+      content: welcomeMessageText,
+    };
+
     const newConversation = {
       id: Date.now().toString(),
       title: "New Conversation",
       date: date.toLocaleDateString(),
       time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      messages: initialMessage ? [initialMessage] : [],
+      messages: initialMessage ? [initialMessage] : [], // Will be updated after typing animation
     };
 
     const updatedConversations = [newConversation, ...conversations];
     setConversations(updatedConversations);
     setActiveConversation(newConversation);
-    if (!initialMessage) {
-      setMessages([]);
-    }
+    setMessages([]); // Clear messages to show typing animation
 
     // Save to localStorage
     saveConversations(updatedConversations);
     localStorage.setItem("activeFarmConversation", newConversation.id);
+
+    // Start typing animation for welcome message
+    if (!initialMessage) {
+      setTimeout(() => {
+        setTypingMessage(welcomeMessage);
+        setTypingIndex(0);
+      }, 300);
+    }
   };
 
   // Function to update the current conversation's messages
@@ -383,33 +399,6 @@ const GeminiSmartFarm = () => {
     // Reset states
     setMessages([]);
     setShowSuggestions(true);
-
-    // Start the welcome message typing animation
-    setTimeout(() => {
-      const welcomeMessage = {
-        role: "assistant",
-        content:
-          "Welcome to Smart Farm AI Assistant! I'm powered by Google's Gemini AI and ready to help with your farming questions. What would you like to know about today?",
-      };
-      setTypingMessage(welcomeMessage);
-      setTypingIndex(0);
-
-      // Update the new conversation with the welcome message
-      if (activeConversation) {
-        const updatedConversations = conversations.map((c) =>
-          c.id === activeConversation.id
-            ? { ...c, messages: [welcomeMessage] }
-            : c
-        );
-        setConversations(updatedConversations);
-        saveConversations(updatedConversations);
-      }
-    }, 300);
-
-    // Focus input after clearing chat
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
   };
 
   const handleSuggestionClick = (suggestion) => {
