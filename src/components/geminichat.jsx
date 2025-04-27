@@ -408,116 +408,116 @@ const GeminiSmartFarm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex relative">
-      {/* Sidebar for chat history - Fixed position */}
-      <div
-        className={`fixed md:sticky top-0 left-0 z-40 w-72 bg-white shadow-lg transform md:transform-none h-screen ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } transition-transform duration-300 ease-in-out flex flex-col`}
-        style={{ height: "100vh" }}
-      >
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-green-50">
-          <h2 className="font-bold text-green-800">Chat History</h2>
-          <button
-            onClick={() => startNewConversation()}
-            className="text-green-600 hover:text-green-800"
-            title="New conversation"
-          >
-            <PlusCircle size={20} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <div className="text-center p-4 text-gray-500">
-              <p>No conversations yet</p>
+    <div className="h-screen bg-gradient-to-b from-green-50 to-green-100 flex flex-col relative">
+      {/* App Bar - Full width, fixed height */}
+      <div className="bg-white shadow z-10">
+        <div className="max-w-full mx-auto px-4 py-3">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <button
+                onClick={handleBack}
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ChevronLeft className="h-5 w-5" />
+                <span>Back</span>
+              </button>
             </div>
-          ) : (
-            <ul className="divide-y divide-gray-200">
-              {conversations.map((conv) => (
-                <li
-                  key={conv.id}
-                  className={`hover:bg-green-50 cursor-pointer ${
-                    activeConversation?.id === conv.id ? "bg-green-100" : ""
-                  }`}
-                  onClick={() => loadConversation(conv)}
-                >
-                  <div className="p-3 flex justify-between">
-                    <div className="w-11/12">
-                      <div className="font-medium text-gray-800 mb-1 truncate">
-                        {conv.title}
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500">
-                        <Calendar size={12} className="mr-1" />
-                        <span className="mr-2">{conv.date}</span>
-                        <Clock size={12} className="mr-1" />
-                        <span>{conv.time}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => promptDeleteConversation(conv.id, e)}
-                      className="text-gray-400 hover:text-red-500"
-                      title="Delete conversation"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
 
-        <div className="p-3 border-t border-gray-200 bg-green-50 text-center text-xs text-gray-500">
-          Smart Farm AI conversations
-        </div>
-      </div>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate max-w-[40%] sm:max-w-xs md:max-w-md">
+              Smart Farm AI
+            </h1>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Updated App Bar - Mobile responsive while keeping the original Back button */}
-        <div className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                <button
-                  onClick={handleBack}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                  <span>Back</span>
-                </button>
-              </div>
-
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate max-w-[40%] sm:max-w-xs md:max-w-md">
-                Smart Farm AI
-              </h1>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
-                  aria-label="Menu"
-                >
-                  <Menu size={18} className="text-gray-600" />
-                </button>
-                <span className="hidden md:inline text-xs bg-green-100 px-2 py-1 rounded-full text-green-800">
-                  Powered by Gemini 2.0
-                </span>
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Menu"
+              >
+                <Menu size={18} className="text-gray-600" />
+              </button>
+              <span className="hidden md:inline text-xs bg-green-100 px-2 py-1 rounded-full text-green-800">
+                Powered by Gemini 2.0
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Main Content Area - Improved mobile responsiveness */}
-        <div className="container mx-auto p-2 sm:p-4 max-w-3xl flex-1 flex flex-col">
-          {/* Weather Card - Made more responsive */}
-          <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-3 sm:mb-4 flex items-center justify-between">
+      {/* Main Content Area - Fill remaining height, full width */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar - Hidden on mobile unless opened */}
+        <div
+          className={`fixed md:relative md:flex top-0 left-0 z-40 w-72 bg-white shadow-lg transform md:transform-none h-screen ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          } transition-transform duration-300 ease-in-out flex-col`}
+          style={{ height: "100vh" }}
+        >
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-green-50">
+            <h2 className="font-bold text-green-800">Chat History</h2>
+            <button
+              onClick={() => startNewConversation()}
+              className="text-green-600 hover:text-green-800"
+              title="New conversation"
+            >
+              <PlusCircle size={20} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {conversations.length === 0 ? (
+              <div className="text-center p-4 text-gray-500">
+                <p>No conversations yet</p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {conversations.map((conv) => (
+                  <li
+                    key={conv.id}
+                    className={`hover:bg-green-50 cursor-pointer ${
+                      activeConversation?.id === conv.id ? "bg-green-100" : ""
+                    }`}
+                    onClick={() => loadConversation(conv)}
+                  >
+                    <div className="p-3 flex justify-between">
+                      <div className="w-11/12">
+                        <div className="font-medium text-gray-800 mb-1 truncate">
+                          {conv.title}
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar size={12} className="mr-1" />
+                          <span className="mr-2">{conv.date}</span>
+                          <Clock size={12} className="mr-1" />
+                          <span>{conv.time}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => promptDeleteConversation(conv.id, e)}
+                        className="text-gray-400 hover:text-red-500"
+                        title="Delete conversation"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="p-3 border-t border-gray-200 bg-green-50 text-center text-xs text-gray-500">
+            Smart Farm AI conversations
+          </div>
+        </div>
+
+        {/* Main Chat Area - Fills all available space */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          {/* Weather Card - Reduced height and padding */}
+          <div className="bg-white rounded-lg shadow-md p-2 my-2 mx-2 flex items-center justify-between">
             <div className="flex items-center">
-              <Sun className="text-yellow-500 mr-2" size={24} />
+              <Sun className="text-yellow-500 mr-2" size={20} />
               <div>
                 <h3 className="font-medium">Smart Farm Dashboard</h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500">
                   Ask AI for farming insights & advice
                 </p>
               </div>
@@ -525,26 +525,25 @@ const GeminiSmartFarm = () => {
             <div className="flex space-x-2">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="md:hidden bg-green-50 hover:bg-green-100 text-green-800 px-3 py-1 rounded-full flex items-center text-sm transition-colors"
+                className="md:hidden bg-green-50 hover:bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center text-xs transition-colors"
               >
-                <MessageSquare size={14} className="mr-1" /> History
+                <MessageSquare size={12} className="mr-1" /> History
               </button>
               <button
                 onClick={clearChat}
-                className="bg-green-50 hover:bg-green-100 text-green-800 px-3 py-1 rounded-full flex items-center text-sm transition-colors"
+                className="bg-green-50 hover:bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center text-xs transition-colors"
               >
-                <RotateCw size={14} className="mr-1" /> Reset
+                <RotateCw size={12} className="mr-1" /> Reset
               </button>
             </div>
           </div>
 
-          {/* Chat Container */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 flex-1 flex flex-col relative">
-            {/* Chat Messages Area */}
+          {/* Chat Container - Takes all remaining height */}
+          <div className="flex-1 flex flex-col mx-2 mb-2 bg-white rounded-lg shadow-md overflow-hidden">
+            {/* Messages Area - Flexible height */}
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4"
-              style={{ maxHeight: "calc(100vh - 280px)" }}
+              className="flex-1 overflow-y-auto p-3 space-y-3"
             >
               {messages.map((message, index) => {
                 const isRtl = isRTL(message.content);
@@ -556,7 +555,7 @@ const GeminiSmartFarm = () => {
                     }`}
                   >
                     <div
-                      className={`max-w-[85%] sm:max-w-3/4 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl break-words ${
+                      className={`max-w-[85%] px-3 py-2 rounded-2xl break-words ${
                         message.role === "user"
                           ? "bg-green-700 text-white"
                           : "bg-gray-100 text-gray-800"
@@ -578,7 +577,7 @@ const GeminiSmartFarm = () => {
                           </span>
                         </div>
                       )}
-                      <div className="whitespace-pre-wrap text-sm sm:text-base w-full overflow-hidden break-words">
+                      <div className="whitespace-pre-wrap text-sm w-full overflow-hidden break-words">
                         {message.role === "assistant"
                           ? message.content
                               .split(/(\*\*.*?\*\*)/g)
@@ -610,7 +609,7 @@ const GeminiSmartFarm = () => {
               {typingMessage && (
                 <div className="flex flex-col">
                   <div className="flex justify-start">
-                    <div className="max-w-[85%] sm:max-w-3/4 bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tl-none">
+                    <div className="max-w-[85%] bg-gray-100 px-3 py-2 rounded-2xl rounded-tl-none">
                       <div className="flex items-center mb-1">
                         <Leaf
                           size={14}
@@ -620,7 +619,7 @@ const GeminiSmartFarm = () => {
                           Smart Farm AI
                         </span>
                       </div>
-                      <div className="whitespace-pre-wrap text-sm sm:text-base w-full overflow-hidden break-words">
+                      <div className="whitespace-pre-wrap text-sm w-full overflow-hidden break-words">
                         {typingMessage.content
                           .substring(0, typingIndex)
                           .split(/(\*\*.*?\*\*)/g)
@@ -657,7 +656,7 @@ const GeminiSmartFarm = () => {
 
               {isLoading && !typingMessage && (
                 <div className="flex justify-start">
-                  <div className="max-w-[85%] sm:max-w-3/4 bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tl-none">
+                  <div className="max-w-[85%] bg-gray-100 px-3 py-2 rounded-2xl rounded-tl-none">
                     <div className="flex items-center mb-1">
                       <Leaf
                         size={14}
@@ -692,8 +691,8 @@ const GeminiSmartFarm = () => {
               )}
             </div>
 
-            {/* Input Area - Improved for RTL text handling */}
-            <div className="border-t border-gray-200 p-3 bg-gray-50">
+            {/* Input Area - Fixed height */}
+            <div className="border-t border-gray-200 p-2 bg-gray-50">
               <div className="flex items-center bg-white rounded-full border border-gray-300 pl-4 pr-2 py-1 overflow-hidden">
                 <textarea
                   ref={inputRef}
@@ -701,7 +700,7 @@ const GeminiSmartFarm = () => {
                   onChange={handleInputChange}
                   onKeyDown={handleKeyPress}
                   placeholder="Ask about crops, pests, irrigation..."
-                  className="flex-1 outline-none text-gray-800 min-h-[40px] resize-none overflow-hidden break-words max-h-32"
+                  className="flex-1 outline-none text-gray-800 min-h-[40px] resize-none overflow-hidden break-words max-h-24"
                   disabled={isLoading || typingMessage !== null}
                   dir={isRTL(inputText) ? "rtl" : "ltr"}
                   rows={1}
@@ -728,7 +727,7 @@ const GeminiSmartFarm = () => {
                   <Send size={18} />
                 </button>
               </div>
-              <div className="flex justify-end mt-2 px-1">
+              <div className="flex justify-end mt-1 px-1">
                 <p className="text-xs text-gray-500">
                   Powered by Gemini 2.0 Flash
                 </p>
@@ -741,8 +740,8 @@ const GeminiSmartFarm = () => {
       {/* Delete Confirmation Modal - Made more responsive */}
       {showDeleteConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-xs sm:max-w-md w-full">
-            <div className="flex items-center text-red-500 mb-3 sm:mb-4">
+          <div className="bg-white rounded-lg p-4 max-w-xs sm:max-w-md w-full">
+            <div className="flex items-center text-red-500 mb-3">
               <AlertTriangle className="mr-2" size={24} />
               <h3 className="text-lg font-medium">Delete Conversation</h3>
             </div>
