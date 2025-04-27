@@ -263,6 +263,18 @@ const GeminiSmartFarm = () => {
     return hebrewCharRegex.test(text);
   };
 
+  // Function to detect if text contains Arabic characters
+  const isArabic = (text) => {
+    if (!text) return false;
+    const arabicCharRegex = /[\u0600-\u06FF]/;
+    return arabicCharRegex.test(text);
+  };
+
+  // Function to detect if text is RTL (either Hebrew or Arabic)
+  const isRTL = (text) => {
+    return isHebrew(text) || isArabic(text);
+  };
+
   // Function to stop typing and show the full answer
   const stopTyping = () => {
     if (typingMessage) {
@@ -535,7 +547,7 @@ const GeminiSmartFarm = () => {
               style={{ maxHeight: "calc(100vh - 280px)" }}
             >
               {messages.map((message, index) => {
-                const isHebr = isHebrew(message.content);
+                const isRtl = isRTL(message.content);
                 return (
                   <div
                     key={index}
@@ -544,7 +556,7 @@ const GeminiSmartFarm = () => {
                     }`}
                   >
                     <div
-                      className={`max-w-[85%] sm:max-w-3/4 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl ${
+                      className={`max-w-[85%] sm:max-w-3/4 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl break-words ${
                         message.role === "user"
                           ? "bg-green-700 text-white"
                           : "bg-gray-100 text-gray-800"
@@ -553,17 +565,20 @@ const GeminiSmartFarm = () => {
                           ? "rounded-tr-none"
                           : "rounded-tl-none"
                       }`}
-                      dir={isHebr ? "rtl" : "ltr"}
+                      dir={isRtl ? "rtl" : "ltr"}
                     >
                       {message.role === "assistant" && (
                         <div className="flex items-center mb-1">
-                          <Leaf size={14} className="text-green-600 mr-1" />
+                          <Leaf
+                            size={14}
+                            className="text-green-600 mr-1 flex-shrink-0"
+                          />
                           <span className="text-xs font-medium text-green-600">
                             Smart Farm AI
                           </span>
                         </div>
                       )}
-                      <div className="whitespace-pre-wrap text-sm sm:text-base">
+                      <div className="whitespace-pre-wrap text-sm sm:text-base w-full overflow-hidden break-words">
                         {message.role === "assistant"
                           ? message.content
                               .split(/(\*\*.*?\*\*)/g)
@@ -573,10 +588,16 @@ const GeminiSmartFarm = () => {
                                   part.endsWith("**")
                                 ) {
                                   return (
-                                    <strong key={i}>{part.slice(2, -2)}</strong>
+                                    <strong key={i} className="break-words">
+                                      {part.slice(2, -2)}
+                                    </strong>
                                   );
                                 }
-                                return <span key={i}>{part}</span>;
+                                return (
+                                  <span key={i} className="break-words">
+                                    {part}
+                                  </span>
+                                );
                               })
                           : message.content}
                       </div>
@@ -591,22 +612,31 @@ const GeminiSmartFarm = () => {
                   <div className="flex justify-start">
                     <div className="max-w-[85%] sm:max-w-3/4 bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tl-none">
                       <div className="flex items-center mb-1">
-                        <Leaf size={14} className="text-green-600 mr-1" />
+                        <Leaf
+                          size={14}
+                          className="text-green-600 mr-1 flex-shrink-0"
+                        />
                         <span className="text-xs font-medium text-green-600">
                           Smart Farm AI
                         </span>
                       </div>
-                      <div className="whitespace-pre-wrap text-sm sm:text-base">
+                      <div className="whitespace-pre-wrap text-sm sm:text-base w-full overflow-hidden break-words">
                         {typingMessage.content
                           .substring(0, typingIndex)
                           .split(/(\*\*.*?\*\*)/g)
                           .map((part, i) => {
                             if (part.startsWith("**") && part.endsWith("**")) {
                               return (
-                                <strong key={i}>{part.slice(2, -2)}</strong>
+                                <strong key={i} className="break-words">
+                                  {part.slice(2, -2)}
+                                </strong>
                               );
                             }
-                            return <span key={i}>{part}</span>;
+                            return (
+                              <span key={i} className="break-words">
+                                {part}
+                              </span>
+                            );
                           })}
                         <span className="inline-block w-1 h-4 ml-0.5 bg-green-600 animate-pulse"></span>
                       </div>
@@ -629,7 +659,10 @@ const GeminiSmartFarm = () => {
                 <div className="flex justify-start">
                   <div className="max-w-[85%] sm:max-w-3/4 bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tl-none">
                     <div className="flex items-center mb-1">
-                      <Leaf size={14} className="text-green-600 mr-1" />
+                      <Leaf
+                        size={14}
+                        className="text-green-600 mr-1 flex-shrink-0"
+                      />
                       <span className="text-xs font-medium text-green-600">
                         Smart Farm AI
                       </span>
@@ -659,19 +692,24 @@ const GeminiSmartFarm = () => {
               )}
             </div>
 
-            {/* Input Area */}
+            {/* Input Area - Improved for RTL text handling */}
             <div className="border-t border-gray-200 p-3 bg-gray-50">
               <div className="flex items-center bg-white rounded-full border border-gray-300 pl-4 pr-2 py-1 overflow-hidden">
-                <input
+                <textarea
                   ref={inputRef}
-                  type="text"
                   value={inputText}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyPress}
                   placeholder="Ask about crops, pests, irrigation..."
-                  className="flex-1 outline-none text-gray-800 min-h-[40px]"
+                  className="flex-1 outline-none text-gray-800 min-h-[40px] resize-none overflow-hidden break-words max-h-32"
                   disabled={isLoading || typingMessage !== null}
-                  dir={isHebrew(inputText) ? "rtl" : "ltr"}
+                  dir={isRTL(inputText) ? "rtl" : "ltr"}
+                  rows={1}
+                  style={{
+                    padding: "9px 0",
+                    lineHeight: "1.5",
+                    overflowY: "auto",
+                  }}
                 />
                 <button
                   onClick={() => sendMessage()}
@@ -679,7 +717,7 @@ const GeminiSmartFarm = () => {
                     isLoading || typingMessage !== null || !inputText.trim()
                   }
                   className={`
-                    p-2 rounded-full ml-1
+                    p-2 rounded-full ml-1 flex-shrink-0
                     ${
                       isLoading || typingMessage !== null || !inputText.trim()
                         ? "text-gray-400 cursor-not-allowed"
