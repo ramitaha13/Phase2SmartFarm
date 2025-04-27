@@ -152,7 +152,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/geminichat",
-    element: <Geminichat />,
+    element: (
+      <ProtectedRoute>
+        <Geminichat />
+      </ProtectedRoute>
+    ),
   },
 ]);
 

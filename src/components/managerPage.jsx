@@ -319,7 +319,7 @@ const ManagerPage = () => {
 
   // Add handler for Farmer Assistant button
   const handleFarmerAssistantClick = () => {
-    navigate("/farmerassistant");
+    navigate("/geminichat");
     setIsMobileMenuOpen(false);
   };
 
