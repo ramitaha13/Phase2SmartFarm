@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  ArrowLeft,
+  ChevronLeft,
   Tractor,
   Send,
   PlusCircle,
@@ -406,7 +406,7 @@ const GeminiSmartFarm = () => {
   };
 
   // Function to go back to the previous page
-  const handleBackClick = () => {
+  const handleBack = () => {
     window.history.go(-1);
   };
 
@@ -478,31 +478,33 @@ const GeminiSmartFarm = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* App Bar */}
-        <div className="bg-green-800 text-white shadow-lg sticky top-0 z-10">
-          <div className="container mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+        {/* Updated App Bar - Mobile responsive while keeping the original Back button */}
+        <div className="bg-white shadow">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
                 <button
-                  className="md:hidden p-2 rounded-full hover:bg-green-700 transition-colors"
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  onClick={handleBack}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  <Menu size={20} />
+                  <ChevronLeft className="h-5 w-5" />
+                  <span>Back</span>
                 </button>
-                <button
-                  className="p-2 rounded-full hover:bg-green-700 transition-colors"
-                  onClick={handleBackClick}
-                >
-                  <ArrowLeft size={20} />
-                </button>
-                <div className="flex items-center space-x-2">
-                  <Tractor size={24} />
-                  <h1 className="text-xl font-bold">Smart Farm AI</h1>
-                </div>
               </div>
-              {/* Show "Powered by Gemini" only on desktop screens */}
-              <div className="hidden md:flex items-center space-x-2">
-                <span className="text-xs bg-green-700 px-2 py-1 rounded-full">
+
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate max-w-[40%] sm:max-w-xs md:max-w-md">
+                Smart Farm AI Assistant
+              </h1>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Menu"
+                >
+                  <Menu size={18} className="text-gray-600" />
+                </button>
+                <span className="hidden md:inline text-xs bg-green-100 px-2 py-1 rounded-full text-green-800">
                   Powered by Gemini 2.0
                 </span>
               </div>
@@ -510,10 +512,10 @@ const GeminiSmartFarm = () => {
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="container mx-auto p-4 max-w-3xl flex-1 flex flex-col">
-          {/* Weather Card */}
-          <div className="bg-white rounded-lg shadow-md p-4 mb-4 flex items-center justify-between">
+        {/* Main Content Area - Improved mobile responsiveness */}
+        <div className="container mx-auto p-2 sm:p-4 max-w-3xl flex-1 flex flex-col">
+          {/* Weather Card - Made more responsive */}
+          <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-3 sm:mb-4 flex items-center justify-between">
             <div className="flex items-center">
               <Sun className="text-yellow-500 mr-2" size={24} />
               <div>
@@ -544,8 +546,8 @@ const GeminiSmartFarm = () => {
             {/* Chat Messages Area */}
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
-              style={{ maxHeight: "calc(100vh - 300px)" }}
+              className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4"
+              style={{ maxHeight: "calc(100vh - 280px)" }}
             >
               {messages.map((message, index) => {
                 const isHebr = isHebrew(message.content);
@@ -557,7 +559,7 @@ const GeminiSmartFarm = () => {
                     }`}
                   >
                     <div
-                      className={`max-w-3/4 px-4 py-3 rounded-2xl ${
+                      className={`max-w-[85%] sm:max-w-3/4 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl ${
                         message.role === "user"
                           ? "bg-green-700 text-white"
                           : "bg-gray-100 text-gray-800"
@@ -576,10 +578,9 @@ const GeminiSmartFarm = () => {
                           </span>
                         </div>
                       )}
-                      <div className="whitespace-pre-wrap">
+                      <div className="whitespace-pre-wrap text-sm sm:text-base">
                         {message.role === "assistant"
-                          ? // Process the text to properly format bold text
-                            message.content
+                          ? message.content
                               .split(/(\*\*.*?\*\*)/g)
                               .map((part, i) => {
                                 if (
@@ -603,14 +604,14 @@ const GeminiSmartFarm = () => {
               {typingMessage && (
                 <div className="flex flex-col">
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-tl-none">
+                    <div className="max-w-[85%] sm:max-w-3/4 bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tl-none">
                       <div className="flex items-center mb-1">
                         <Leaf size={14} className="text-green-600 mr-1" />
                         <span className="text-xs font-medium text-green-600">
                           Smart Farm AI
                         </span>
                       </div>
-                      <div className="whitespace-pre-wrap">
+                      <div className="whitespace-pre-wrap text-sm sm:text-base">
                         {typingMessage.content
                           .substring(0, typingIndex)
                           .split(/(\*\*.*?\*\*)/g)
@@ -641,7 +642,7 @@ const GeminiSmartFarm = () => {
 
               {isLoading && !typingMessage && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-tl-none">
+                  <div className="max-w-[85%] sm:max-w-3/4 bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tl-none">
                     <div className="flex items-center mb-1">
                       <Leaf size={14} className="text-green-600 mr-1" />
                       <span className="text-xs font-medium text-green-600">
@@ -673,18 +674,18 @@ const GeminiSmartFarm = () => {
               )}
             </div>
 
-            {/* Quick Suggestions */}
+            {/* Quick Suggestions - Made scrollable on mobile */}
             {showSuggestions && (
-              <div className="px-4 pb-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500 mt-3 mb-2">
+              <div className="px-3 sm:px-4 pb-2 sm:pb-3 border-t border-gray-100">
+                <p className="text-xs text-gray-500 mt-2 sm:mt-3 mb-1 sm:mb-2">
                   Quick Questions
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex overflow-x-auto pb-1 sm:flex-wrap gap-2">
                   {suggestions.map((suggestion, i) => (
                     <button
                       key={i}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="bg-green-50 hover:bg-green-100 text-green-800 text-sm px-3 py-2 rounded-full transition-colors"
+                      className="bg-green-50 hover:bg-green-100 text-green-800 text-sm px-3 py-2 rounded-full transition-colors whitespace-nowrap flex-shrink-0"
                     >
                       {suggestion}
                     </button>
@@ -741,11 +742,11 @@ const GeminiSmartFarm = () => {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - Made more responsive */}
       {showDeleteConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center text-red-500 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-xs sm:max-w-md w-full">
+            <div className="flex items-center text-red-500 mb-3 sm:mb-4">
               <AlertTriangle className="mr-2" size={24} />
               <h3 className="text-lg font-medium">Delete Conversation</h3>
             </div>
