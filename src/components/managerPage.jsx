@@ -21,7 +21,7 @@ import {
   BarChart,
   Bot,
   Gauge,
-  Lightbulb, // Added for Farmer Assistant icon
+  Lightbulb,
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -101,7 +101,7 @@ const logoutButtonStyles = `
 
 const ManagerPage = () => {
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
@@ -271,56 +271,56 @@ const ManagerPage = () => {
 
   const handleDashboardClick = () => {
     navigate("/managerPage");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   const handleUsersClick = () => {
     navigate("/usersControl");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   const handleContactClick = () => {
     navigate("/contactUs");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   const handleWeatherClick = () => {
     navigate("/weatherPage");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   // Added handler for Tasks button
   const handleTasksClick = () => {
     navigate("/tasks");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   const handleSensorsClick = () => {
     navigate("/sensors");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   const handleIrrigationClick = () => {
     navigate("/irrigation");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   // Added handler for SensorAnalytics button
   const handleSensorAnalyticsClick = () => {
     navigate("/sensorAnalytics");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   // Add handler for robotController button
   const handleRobotControllerClick = () => {
     navigate("/robotController");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   // Add handler for Farmer Assistant button
   const handleFarmerAssistantClick = () => {
     navigate("/geminichat");
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   // 1) If still loading, show a loading state
@@ -355,16 +355,115 @@ const ManagerPage = () => {
   // 3) Otherwise, render the ManagerPage content
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Mobile Sidebar - Using fixed position */}
+      <div
+        className={`fixed md:hidden top-0 left-0 z-40 w-72 bg-white shadow-lg transform h-screen ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } transition-transform duration-300 ease-in-out`}
+        style={{ height: "100vh" }}
+      >
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-green-50">
+          <h2 className="font-bold text-green-800">Smart Farm</h2>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-2">
+          <button
+            onClick={handleDashboardClick}
+            className="w-full flex items-center space-x-2 text-green-600 bg-green-50 px-4 py-2 rounded-md"
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span>Dashboard</span>
+          </button>
+          <button
+            onClick={handleUsersClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <Users className="h-5 w-5" />
+            <span>Users</span>
+          </button>
+          <button
+            onClick={handleTasksClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <ClipboardList className="h-5 w-5" />
+            <span>Tasks</span>
+          </button>
+          <button
+            onClick={handleSensorsClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <Thermometer className="h-5 w-5" />
+            <span>Sensors</span>
+          </button>
+          <button
+            onClick={handleSensorAnalyticsClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <BarChart className="h-5 w-5" />
+            <span>Sensor Analytics</span>
+          </button>
+          <button
+            onClick={handleIrrigationClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <Droplets className="h-5 w-5" />
+            <span>Irrigation Control</span>
+          </button>
+          <button
+            onClick={handleRobotControllerClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <Bot className="h-5 w-5" />
+            <span>Robot Controller</span>
+          </button>
+          <button
+            onClick={handleFarmerAssistantClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <Lightbulb className="h-5 w-5" />
+            <span>Farmer Assistant</span>
+          </button>
+          <button
+            onClick={handleWeatherClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <Cloud className="h-5 w-5" />
+            <span>Weather</span>
+          </button>
+          <button
+            onClick={handleContactClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <MessageSquare className="h-5 w-5" />
+            <span>Contact Us</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile sidebar overlay - Click to close */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Navigation Bar */}
       <nav className="bg-white shadow-sm px-4 py-4 md:px-6">
         <div className="flex justify-between items-center">
           {/* Sidebar Toggle and Smart Farm Text */}
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
               className="md:hidden mr-2"
             >
-              {isMobileMenuOpen ? (
+              {sidebarOpen ? (
                 <X className="h-6 w-6" />
               ) : (
                 <Menu className="h-6 w-6" />
@@ -374,9 +473,8 @@ const ManagerPage = () => {
             <span className="text-xl font-semibold">Smart Farm</span>
           </div>
 
-          {/* Logout Button - NEW STYLE */}
+          {/* Logout Button */}
           <div>
-            {/* Desktop Logout Button */}
             <button onClick={handleLogout} className="Btn">
               <div className="sign">
                 <svg viewBox="0 0 512 512">
@@ -389,107 +487,8 @@ const ManagerPage = () => {
         </div>
       </nav>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        >
-          <div
-            className="bg-white w-3/4 h-full shadow-lg absolute left-0 top-0 p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <div className="flex justify-end mb-6">
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <nav className="space-y-2">
-              <button
-                onClick={handleDashboardClick}
-                className="w-full flex items-center space-x-2 text-green-600 bg-green-50 px-4 py-2 rounded-md"
-              >
-                <LayoutDashboard className="h-5 w-5" />
-                <span>Dashboard</span>
-              </button>
-              <button
-                onClick={handleUsersClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <Users className="h-5 w-5" />
-                <span>Users</span>
-              </button>
-              {/* Added Tasks button to mobile menu */}
-              <button
-                onClick={handleTasksClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <ClipboardList className="h-5 w-5" />
-                <span>Tasks</span>
-              </button>
-              <button
-                onClick={handleSensorsClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <Thermometer className="h-5 w-5" />
-                <span>Sensors</span>
-              </button>
-              {/* New SensorAnalytics button for mobile menu */}
-              <button
-                onClick={handleSensorAnalyticsClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <BarChart className="h-5 w-5" />
-                <span>Sensor Analytics</span>
-              </button>
-              <button
-                onClick={handleIrrigationClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <Droplets className="h-5 w-5" />
-                <span>Irrigation Control</span>
-              </button>
-              {/* New Robot Controller button for mobile menu */}
-              <button
-                onClick={handleRobotControllerClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <Bot className="h-5 w-5" />
-                <span>Robot Controller</span>
-              </button>
-              {/* New Farmer Assistant button for mobile menu */}
-              <button
-                onClick={handleFarmerAssistantClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <Lightbulb className="h-5 w-5" />
-                <span>Farmer Assistant</span>
-              </button>
-              <button
-                onClick={handleWeatherClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <Cloud className="h-5 w-5" />
-                <span>Weather</span>
-              </button>
-              <button
-                onClick={handleContactClick}
-                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span>Contact Us</span>
-              </button>
-            </nav>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col md:flex-row">
-        {/* Sidebar - Hidden on mobile, visible on md screens and up */}
+        {/* Desktop Sidebar - Unchanged from original */}
         <aside className="hidden md:block w-64 bg-white h-screen shadow-sm p-6">
           <div className="text-sm text-gray-500 mb-4">NAVIGATION</div>
           <nav className="space-y-2">
@@ -507,7 +506,6 @@ const ManagerPage = () => {
               <Users className="h-5 w-5" />
               <span>Users</span>
             </button>
-            {/* Added Tasks button to desktop sidebar */}
             <button
               onClick={handleTasksClick}
               className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
@@ -522,7 +520,6 @@ const ManagerPage = () => {
               <Thermometer className="h-5 w-5" />
               <span>Sensors</span>
             </button>
-            {/* New SensorAnalytics button for desktop sidebar */}
             <button
               onClick={handleSensorAnalyticsClick}
               className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
@@ -537,7 +534,6 @@ const ManagerPage = () => {
               <Droplets className="h-5 w-5" />
               <span>Irrigation Control</span>
             </button>
-            {/* New Robot Controller button for desktop sidebar */}
             <button
               onClick={handleRobotControllerClick}
               className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
@@ -545,7 +541,6 @@ const ManagerPage = () => {
               <Bot className="h-5 w-5" />
               <span>Robot Controller</span>
             </button>
-            {/* New Farmer Assistant button for desktop sidebar */}
             <button
               onClick={handleFarmerAssistantClick}
               className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
@@ -570,7 +565,7 @@ const ManagerPage = () => {
           </nav>
         </aside>
 
-        {/* Main Content */}
+        {/* Main Content - Unchanged from original */}
         <main className="flex-1 p-4 md:p-6">
           {/* Profile Section */}
           <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6">
@@ -608,7 +603,7 @@ const ManagerPage = () => {
             </div>
           </div>
 
-          {/* Environment Monitoring Section - UPDATED with Air Humidity and Pressure */}
+          {/* Environment Monitoring Section */}
           <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">
@@ -644,7 +639,7 @@ const ManagerPage = () => {
                 </div>
               </div>
 
-              {/* Air Humidity - ADDED */}
+              {/* Air Humidity */}
               <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                 <Droplets className="h-8 w-8 text-blue-500" />
                 <div className="text-lg font-medium text-gray-800">
@@ -652,7 +647,7 @@ const ManagerPage = () => {
                 </div>
               </div>
 
-              {/* Air Pressure - ADDED */}
+              {/* Air Pressure */}
               <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                 <Gauge className="h-8 w-8 text-purple-500" />
                 <div className="text-lg font-medium text-gray-800">
