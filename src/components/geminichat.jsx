@@ -20,7 +20,6 @@ const GeminiSmartFarm = () => {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showSuggestions, setShowSuggestions] = useState(true);
   const [typingMessage, setTypingMessage] = useState(null);
   const [typingIndex, setTypingIndex] = useState(0);
   const [typingSpeed] = useState(20); // milliseconds per character
@@ -39,14 +38,6 @@ const GeminiSmartFarm = () => {
   // Welcome message for all new conversations
   const welcomeMessageText =
     "Welcome to Smart Farm AI Assistant! I'm powered by Google's Gemini AI and ready to help with your farming questions. What would you like to know about today?";
-
-  // Farming-related quick suggestion buttons
-  const suggestions = [
-    "Best crops for this season?",
-    "How to deal with aphids naturally?",
-    "Smart irrigation methods?",
-    "Soil health indicators?",
-  ];
 
   // Load conversations from localStorage on component mount
   useEffect(() => {
@@ -305,7 +296,6 @@ const GeminiSmartFarm = () => {
     setInputText("");
     setIsLoading(true);
     setError(null);
-    setShowSuggestions(false);
 
     try {
       // Simplified payload structure for Gemini 2.0 Flash
@@ -398,11 +388,6 @@ const GeminiSmartFarm = () => {
 
     // Reset states
     setMessages([]);
-    setShowSuggestions(true);
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    sendMessage(suggestion);
   };
 
   // Function to go back to the previous page
@@ -493,7 +478,7 @@ const GeminiSmartFarm = () => {
               </div>
 
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate max-w-[40%] sm:max-w-xs md:max-w-md">
-                Smart Farm AI Assistant
+                Smart Farm AI
               </h1>
 
               <div className="flex items-center gap-2">
@@ -674,26 +659,6 @@ const GeminiSmartFarm = () => {
               )}
             </div>
 
-            {/* Quick Suggestions - Made scrollable on mobile */}
-            {showSuggestions && (
-              <div className="px-3 sm:px-4 pb-2 sm:pb-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500 mt-2 sm:mt-3 mb-1 sm:mb-2">
-                  Quick Questions
-                </p>
-                <div className="flex overflow-x-auto pb-1 sm:flex-wrap gap-2">
-                  {suggestions.map((suggestion, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="bg-green-50 hover:bg-green-100 text-green-800 text-sm px-3 py-2 rounded-full transition-colors whitespace-nowrap flex-shrink-0"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Input Area */}
             <div className="border-t border-gray-200 p-3 bg-gray-50">
               <div className="flex items-center bg-white rounded-full border border-gray-300 pl-4 pr-2 py-1 overflow-hidden">
@@ -725,14 +690,7 @@ const GeminiSmartFarm = () => {
                   <Send size={18} />
                 </button>
               </div>
-              <div className="flex justify-between mt-2 px-1">
-                <button
-                  className="text-xs text-gray-500 hover:text-gray-700 flex items-center"
-                  onClick={() => setShowSuggestions(!showSuggestions)}
-                >
-                  <PlusCircle size={12} className="mr-1" />
-                  {showSuggestions ? "Hide suggestions" : "Show suggestions"}
-                </button>
+              <div className="flex justify-end mt-2 px-1">
                 <p className="text-xs text-gray-500">
                   Powered by Gemini 2.0 Flash
                 </p>
