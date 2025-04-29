@@ -20,6 +20,8 @@ import SensorAnalytics from "../src/components/sensorAnalytics.jsx";
 import RobotController from "../src/components/robotController.jsx";
 import Farmerassistant from "../src/components/farmerassistant.jsx";
 import Geminichat from "../src/components/geminichat.jsx";
+import Noteandmedia from "../src/components/note&media.jsx";
+import MediaViewerManager from "../src/components/mediaViewerManager.jsx";
 
 const router = createBrowserRouter([
   {
@@ -157,6 +159,14 @@ const router = createBrowserRouter([
         <Geminichat />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/note&media",
+    element: <Noteandmedia />,
+  },
+  {
+    path: "/mediaViewerManager",
+    element: <MediaViewerManager />,
   },
 ]);
 
