@@ -300,6 +300,20 @@ const NoteMediaUploader = () => {
 
       await addDoc(collection(db, collectionName), noteData);
       setUploadSuccess(true);
+
+      // Reset all fields after successful upload
+      mediaFiles.forEach((m) => m.preview && URL.revokeObjectURL(m.preview));
+      setMediaFiles([]);
+      setSelectedMediaIndex(0);
+      setTitle("");
+      setDescription("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (multipleFileInputRef.current) multipleFileInputRef.current.value = "";
+
+      // Set a timeout to clear the success message after a few seconds
+      setTimeout(() => {
+        setUploadSuccess(false);
+      }, 3000);
     } catch (err) {
       console.error(err);
       setError("Failed to save. Please try again.");
