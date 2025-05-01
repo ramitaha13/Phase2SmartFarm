@@ -1,13 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  doc,
-  deleteDoc,
-} from "firebase/firestore";
+import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import {
   ChevronLeft,
@@ -20,7 +13,6 @@ import {
   ExternalLink,
   Calendar,
   Info,
-  Trash2,
   AlertCircle,
   CheckCircle,
   Eye,
@@ -29,7 +21,7 @@ import {
   File as FileIcon,
 } from "lucide-react";
 
-const MediaGallery = () => {
+const MediaGalleryEmployee = () => {
   // Navigation
   const navigate = useNavigate();
 
@@ -39,9 +31,6 @@ const MediaGallery = () => {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMedia, setSelectedMedia] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [videoThumbnails, setVideoThumbnails] = useState({});
@@ -109,7 +98,7 @@ const MediaGallery = () => {
     };
 
     fetchMediaItems();
-  }, [deleteSuccess]);
+  }, []);
 
   // Generate thumbnails for videos after media items are loaded
   useEffect(() => {
@@ -133,14 +122,7 @@ const MediaGallery = () => {
       // Create a unique key for each video
       const videoKey = `${id}-${mediaUrl}`;
 
-      // We could use a real thumbnail service here
-      // For now, we'll just use a generic video thumbnail placeholder
       newThumbnails[videoKey] = "/video-thumbnail-placeholder.jpg";
-
-      // In a real implementation, you might want to generate actual thumbnails:
-      // 1. Using a cloud function that generates thumbnails when videos are uploaded
-      // 2. Using a video thumbnail service
-      // 3. Using the poster attribute of video elements
     });
 
     setVideoThumbnails(newThumbnails);
@@ -384,47 +366,6 @@ const MediaGallery = () => {
     setShowPreviewModal(true);
   };
 
-  // Handle delete confirmation
-  const handleDeleteConfirm = (item) => {
-    setDeleteConfirm(item);
-  };
-
-  // Handle delete media
-  const handleDeleteMedia = async () => {
-    if (!deleteConfirm) return;
-
-    setIsDeleting(true);
-
-    try {
-      // Delete from Firestore
-      await deleteDoc(doc(db, deleteConfirm.collectionName, deleteConfirm.id));
-
-      // Update state
-      setDeleteSuccess(true);
-      setDeleteConfirm(null);
-
-      // Close modal if it's open
-      if (
-        showPreviewModal &&
-        selectedMedia &&
-        selectedMedia.id === deleteConfirm.id
-      ) {
-        setShowPreviewModal(false);
-        setSelectedMedia(null);
-      }
-
-      // Show success message temporarily
-      setTimeout(() => {
-        setDeleteSuccess(false);
-      }, 3000);
-    } catch (err) {
-      console.error("Error deleting item:", err);
-      setError("An error occurred while deleting the item. Please try again.");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   // Close modal
   const closeModal = () => {
     setShowPreviewModal(false);
@@ -437,11 +378,8 @@ const MediaGallery = () => {
       return ["other"];
     }
 
-    // Get unique types (excluding PDF)
-    const types = [
-      ...new Set(item.mediaItems.map((media) => detectFileType(media))),
-    ];
-    return types.filter((type) => type !== "pdf");
+    // Get unique types
+    return [...new Set(item.mediaItems.map((media) => detectFileType(media)))];
   };
 
   // Get primary media type for an item (for display purposes)
@@ -465,14 +403,6 @@ const MediaGallery = () => {
   const getVideoThumbnail = (item, mediaItem) => {
     const videoKey = `${item.id}-${mediaItem.url}`;
     return videoThumbnails[videoKey] || null;
-  };
-
-  // Filter out PDF files from item's media items
-  const getNonPdfMediaItems = (item) => {
-    if (!item.mediaItems || item.mediaItems.length === 0) {
-      return [];
-    }
-    return item.mediaItems.filter((media) => detectFileType(media) !== "pdf");
   };
 
   return (
@@ -500,15 +430,6 @@ const MediaGallery = () => {
             <div className="flex">
               <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
               <div>{error}</div>
-            </div>
-          </div>
-        )}
-
-        {deleteSuccess && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-            <div className="flex">
-              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-              <div>Item deleted successfully</div>
             </div>
           </div>
         )}
@@ -549,13 +470,10 @@ const MediaGallery = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
             {filteredMediaItems.map((item) => {
               const mediaTypes = getMediaTypes(item);
-              const nonPdfMediaItems = getNonPdfMediaItems(item);
-              const firstMediaItem = nonPdfMediaItems[0] || null;
-
-              // Skip items that only have PDF files
-              if (nonPdfMediaItems.length === 0) {
-                return null;
-              }
+              // Filter out PDF files from the displayed types
+              const filteredMediaTypes = mediaTypes.filter(
+                (type) => type !== "pdf"
+              );
 
               return (
                 <div
@@ -567,10 +485,10 @@ const MediaGallery = () => {
                     className="aspect-video bg-gray-100 cursor-pointer relative"
                     onClick={() => handleMediaItemClick(item)}
                   >
-                    {firstMediaItem ? (
-                      detectFileType(firstMediaItem) === "image" ? (
+                    {item.mediaItems && item.mediaItems.length > 0 ? (
+                      detectFileType(item.mediaItems[0]) === "image" ? (
                         <img
-                          src={firstMediaItem.url}
+                          src={item.mediaItems[0].url}
                           alt={item.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -578,7 +496,7 @@ const MediaGallery = () => {
                             e.target.src = "/image-placeholder.jpg"; // Fallback image
                           }}
                         />
-                      ) : detectFileType(firstMediaItem) === "video" ? (
+                      ) : detectFileType(item.mediaItems[0]) === "video" ? (
                         <div className="w-full h-full relative">
                           {/* Video thumbnail with overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-10"></div>
@@ -595,10 +513,10 @@ const MediaGallery = () => {
                               ref={(el) =>
                                 el &&
                                 (videoRefs.current[
-                                  `${item.id}-${firstMediaItem.url}`
+                                  `${item.id}-${item.mediaItems[0].url}`
                                 ] = el)
                               }
-                              src={firstMediaItem.url}
+                              src={item.mediaItems[0].url}
                               className="w-full h-full object-cover"
                               preload="metadata"
                               muted
@@ -617,10 +535,12 @@ const MediaGallery = () => {
                             />
                           </div>
                           <div className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-md z-20">
-                            {getMediaTypeName(detectFileType(firstMediaItem))}
+                            {getMediaTypeName(
+                              detectFileType(item.mediaItems[0])
+                            )}
                           </div>
                         </div>
-                      ) : detectFileType(firstMediaItem) === "word" ? (
+                      ) : detectFileType(item.mediaItems[0]) === "word" ? (
                         <div className="w-full h-full flex flex-col items-center justify-center">
                           <div
                             className={`p-4 rounded-full ${getFileTypeColor(
@@ -630,13 +550,13 @@ const MediaGallery = () => {
                             <FileText className="h-8 w-8 text-white" />
                           </div>
                           <p className="text-sm font-medium text-gray-700 truncate max-w-[80%]">
-                            {firstMediaItem.name}
+                            {item.mediaItems[0].name}
                           </p>
                           <div className="absolute bottom-2 left-2 bg-blue-700 text-white text-xs px-2 py-1 rounded-md">
                             Word
                           </div>
                         </div>
-                      ) : detectFileType(firstMediaItem) === "excel" ? (
+                      ) : detectFileType(item.mediaItems[0]) === "excel" ? (
                         <div className="w-full h-full flex flex-col items-center justify-center">
                           <div
                             className={`p-4 rounded-full ${getFileTypeColor(
@@ -646,13 +566,14 @@ const MediaGallery = () => {
                             <FileText className="h-8 w-8 text-white" />
                           </div>
                           <p className="text-sm font-medium text-gray-700 truncate max-w-[80%]">
-                            {firstMediaItem.name}
+                            {item.mediaItems[0].name}
                           </p>
                           <div className="absolute bottom-2 left-2 bg-green-700 text-white text-xs px-2 py-1 rounded-md">
                             Excel
                           </div>
                         </div>
-                      ) : detectFileType(firstMediaItem) === "powerpoint" ? (
+                      ) : detectFileType(item.mediaItems[0]) ===
+                        "powerpoint" ? (
                         <div className="w-full h-full flex flex-col items-center justify-center">
                           <div
                             className={`p-4 rounded-full ${getFileTypeColor(
@@ -662,7 +583,7 @@ const MediaGallery = () => {
                             <FileText className="h-8 w-8 text-white" />
                           </div>
                           <p className="text-sm font-medium text-gray-700 truncate max-w-[80%]">
-                            {firstMediaItem.name}
+                            {item.mediaItems[0].name}
                           </p>
                           <div className="absolute bottom-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-md">
                             PowerPoint
@@ -672,13 +593,17 @@ const MediaGallery = () => {
                         <div className="w-full h-full flex items-center justify-center">
                           <div
                             className={`p-4 rounded-full ${getFileTypeColor(
-                              detectFileType(firstMediaItem)
+                              detectFileType(item.mediaItems[0])
                             )}`}
                           >
-                            {getMediaTypeIcon(detectFileType(firstMediaItem))}
+                            {getMediaTypeIcon(
+                              detectFileType(item.mediaItems[0])
+                            )}
                           </div>
                           <div className="absolute bottom-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-md">
-                            {getMediaTypeName(detectFileType(firstMediaItem))}
+                            {getMediaTypeName(
+                              detectFileType(item.mediaItems[0])
+                            )}
                           </div>
                         </div>
                       )
@@ -689,9 +614,9 @@ const MediaGallery = () => {
                     )}
 
                     {/* Item count badge */}
-                    {nonPdfMediaItems.length > 1 && (
+                    {item.mediaItems && item.mediaItems.length > 1 && (
                       <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-md z-20">
-                        {nonPdfMediaItems.length} items
+                        {item.mediaItems.length} items
                       </div>
                     )}
                   </div>
@@ -700,9 +625,9 @@ const MediaGallery = () => {
                   <div className="p-5">
                     {/* Type Badges */}
                     <div className="flex justify-between items-start mb-3">
-                      {nonPdfMediaItems.length > 1 ? (
+                      {item.mediaItems && item.mediaItems.length > 1 ? (
                         <div className="flex flex-wrap gap-1 max-w-[75%]">
-                          {mediaTypes.map((type, index) => (
+                          {filteredMediaTypes.map((type, index) => (
                             <span
                               key={index}
                               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFileTypeBadgeColor(
@@ -745,24 +670,14 @@ const MediaGallery = () => {
                       </p>
                     )}
 
-                    {/* Actions */}
-                    <div className="flex justify-between items-center mt-4">
+                    {/* View Button - Full Width */}
+                    <div className="mt-4">
                       <button
                         onClick={() => handleMediaItemClick(item)}
-                        className="flex items-center text-blue-600 hover:text-blue-800"
+                        className="w-full flex items-center justify-center text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 py-2 rounded-md transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         <span>View Details</span>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteConfirm(item);
-                        }}
-                        className="flex items-center text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        <span>Delete</span>
                       </button>
                     </div>
                   </div>
@@ -772,48 +687,6 @@ const MediaGallery = () => {
           </div>
         )}
       </div>
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Confirm Deletion
-            </h3>
-            <p className="text-gray-700">
-              Are you sure you want to delete "{deleteConfirm.title}"? This
-              action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteMedia}
-                className={`px-4 py-2 text-white bg-red-500 rounded-md hover:bg-red-600 flex items-center ${
-                  isDeleting ? "opacity-75 cursor-not-allowed" : ""
-                }`}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    <span>Delete</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Media Preview Modal - IMPROVED FOR MOBILE */}
       {showPreviewModal && selectedMedia && (
@@ -835,33 +708,25 @@ const MediaGallery = () => {
             {/* Modal Content */}
             <div className="flex-1 overflow-auto p-3 sm:p-4">
               {selectedMedia.mediaItems &&
-                getNonPdfMediaItems(selectedMedia).length > 0 && (
+                selectedMedia.mediaItems.length > 0 && (
                   <div className="mb-4 sm:mb-6">
                     {/* Media Display */}
                     <div className="relative w-full aspect-video bg-gray-50 rounded-lg overflow-hidden mb-4">
                       {detectFileType(
-                        getNonPdfMediaItems(selectedMedia)[selectedMediaIndex]
+                        selectedMedia.mediaItems[selectedMediaIndex]
                       ) === "video" ? (
                         <video
-                          src={
-                            getNonPdfMediaItems(selectedMedia)[
-                              selectedMediaIndex
-                            ].url
-                          }
+                          src={selectedMedia.mediaItems[selectedMediaIndex].url}
                           controls
                           autoPlay
                           controlsList="nodownload"
                           className="w-full h-full object-contain"
                         />
                       ) : detectFileType(
-                          getNonPdfMediaItems(selectedMedia)[selectedMediaIndex]
+                          selectedMedia.mediaItems[selectedMediaIndex]
                         ) === "image" ? (
                         <img
-                          src={
-                            getNonPdfMediaItems(selectedMedia)[
-                              selectedMediaIndex
-                            ].url
-                          }
+                          src={selectedMedia.mediaItems[selectedMediaIndex].url}
                           alt={selectedMedia.title}
                           className="w-full h-full object-contain"
                           onError={(e) => {
@@ -870,24 +735,18 @@ const MediaGallery = () => {
                           }}
                         />
                       ) : detectFileType(
-                          getNonPdfMediaItems(selectedMedia)[selectedMediaIndex]
+                          selectedMedia.mediaItems[selectedMediaIndex]
                         ) === "word" ? (
                         <div className="flex flex-col items-center justify-center h-full p-4 sm:p-8 bg-gray-100">
                           <div className="p-4 sm:p-6 rounded-full bg-blue-700 mb-3 sm:mb-4">
                             <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                           </div>
                           <p className="text-base sm:text-lg font-medium text-gray-700 mb-1 sm:mb-2 text-center">
-                            {
-                              getNonPdfMediaItems(selectedMedia)[
-                                selectedMediaIndex
-                              ].name
-                            }
+                            {selectedMedia.mediaItems[selectedMediaIndex].name}
                           </p>
                           <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
                             {formatFileSize(
-                              getNonPdfMediaItems(selectedMedia)[
-                                selectedMediaIndex
-                              ].size
+                              selectedMedia.mediaItems[selectedMediaIndex].size
                             )}
                           </p>
                           {/* IMPROVED MOBILE BUTTONS */}
@@ -896,9 +755,8 @@ const MediaGallery = () => {
                               onClick={(e) => {
                                 e.preventDefault();
                                 window.open(
-                                  getNonPdfMediaItems(selectedMedia)[
-                                    selectedMediaIndex
-                                  ].url,
+                                  selectedMedia.mediaItems[selectedMediaIndex]
+                                    .url,
                                   "_blank"
                                 );
                               }}
@@ -909,14 +767,11 @@ const MediaGallery = () => {
                             </button>
                             <a
                               href={
-                                getNonPdfMediaItems(selectedMedia)[
-                                  selectedMediaIndex
-                                ].url
+                                selectedMedia.mediaItems[selectedMediaIndex].url
                               }
                               download={
-                                getNonPdfMediaItems(selectedMedia)[
-                                  selectedMediaIndex
-                                ].name || "download"
+                                selectedMedia.mediaItems[selectedMediaIndex]
+                                  .name || "download"
                               }
                               target="_blank"
                               rel="noopener noreferrer"
@@ -932,32 +787,22 @@ const MediaGallery = () => {
                           <div
                             className={`p-4 sm:p-6 rounded-full ${getFileTypeColor(
                               detectFileType(
-                                getNonPdfMediaItems(selectedMedia)[
-                                  selectedMediaIndex
-                                ]
+                                selectedMedia.mediaItems[selectedMediaIndex]
                               )
                             )} mb-3 sm:mb-4`}
                           >
                             {getMediaTypeIcon(
                               detectFileType(
-                                getNonPdfMediaItems(selectedMedia)[
-                                  selectedMediaIndex
-                                ]
+                                selectedMedia.mediaItems[selectedMediaIndex]
                               )
                             )}
                           </div>
                           <p className="text-base sm:text-lg font-medium text-gray-700 mb-1 sm:mb-2 text-center">
-                            {
-                              getNonPdfMediaItems(selectedMedia)[
-                                selectedMediaIndex
-                              ].name
-                            }
+                            {selectedMedia.mediaItems[selectedMediaIndex].name}
                           </p>
                           <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
                             {formatFileSize(
-                              getNonPdfMediaItems(selectedMedia)[
-                                selectedMediaIndex
-                              ].size
+                              selectedMedia.mediaItems[selectedMediaIndex].size
                             )}
                           </p>
                           {/* IMPROVED MOBILE BUTTONS */}
@@ -966,9 +811,8 @@ const MediaGallery = () => {
                               onClick={(e) => {
                                 e.preventDefault();
                                 window.open(
-                                  getNonPdfMediaItems(selectedMedia)[
-                                    selectedMediaIndex
-                                  ].url,
+                                  selectedMedia.mediaItems[selectedMediaIndex]
+                                    .url,
                                   "_blank"
                                 );
                               }}
@@ -979,14 +823,11 @@ const MediaGallery = () => {
                             </button>
                             <a
                               href={
-                                getNonPdfMediaItems(selectedMedia)[
-                                  selectedMediaIndex
-                                ].url
+                                selectedMedia.mediaItems[selectedMediaIndex].url
                               }
                               download={
-                                getNonPdfMediaItems(selectedMedia)[
-                                  selectedMediaIndex
-                                ].name || "download"
+                                selectedMedia.mediaItems[selectedMediaIndex]
+                                  .name || "download"
                               }
                               target="_blank"
                               rel="noopener noreferrer"
@@ -1001,10 +842,11 @@ const MediaGallery = () => {
                     </div>
 
                     {/* Thumbnails for multiple items - IMPROVED FOR MOBILE */}
-                    {getNonPdfMediaItems(selectedMedia).length > 1 && (
+                    {selectedMedia.mediaItems.length > 1 && (
                       <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-1 sm:gap-2">
-                        {getNonPdfMediaItems(selectedMedia).map(
-                          (media, idx) => (
+                        {selectedMedia.mediaItems
+                          .filter((media) => detectFileType(media) !== "pdf")
+                          .map((media, idx) => (
                             <div
                               key={idx}
                               className={`relative cursor-pointer rounded-md overflow-hidden border ${
@@ -1051,8 +893,7 @@ const MediaGallery = () => {
                                 </div>
                               )}
                             </div>
-                          )
-                        )}
+                          ))}
                       </div>
                     )}
                   </div>
@@ -1084,26 +925,28 @@ const MediaGallery = () => {
                     </div>
                   )}
 
-                  {/* Display all types */}
+                  {/* Display all types when multiple types exist - filtered for PDF */}
                   <div className="py-2 grid grid-cols-3 gap-2 sm:gap-4">
                     <dt className="text-xs sm:text-sm font-medium text-gray-500">
                       Types
                     </dt>
                     <dd className="text-xs sm:text-sm text-gray-900 col-span-2">
                       <div className="flex flex-wrap gap-1">
-                        {getMediaTypes(selectedMedia).map((type, index) => (
-                          <span
-                            key={index}
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFileTypeBadgeColor(
-                              type
-                            )} mb-1 mr-1`}
-                          >
-                            {getMediaTypeIcon(type)}
-                            <span className="ml-1">
-                              {getMediaTypeName(type)}
+                        {getMediaTypes(selectedMedia)
+                          .filter((type) => type !== "pdf")
+                          .map((type, index) => (
+                            <span
+                              key={index}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFileTypeBadgeColor(
+                                type
+                              )} mb-1 mr-1`}
+                            >
+                              {getMediaTypeIcon(type)}
+                              <span className="ml-1">
+                                {getMediaTypeName(type)}
+                              </span>
                             </span>
-                          </span>
-                        ))}
+                          ))}
                       </div>
                     </dd>
                   </div>
@@ -1122,7 +965,11 @@ const MediaGallery = () => {
                       File Count
                     </dt>
                     <dd className="text-xs sm:text-sm text-gray-900 col-span-2">
-                      {getNonPdfMediaItems(selectedMedia).length}
+                      {selectedMedia.mediaItems
+                        ? selectedMedia.mediaItems.filter(
+                            (media) => detectFileType(media) !== "pdf"
+                          ).length
+                        : 0}
                     </dd>
                   </div>
                 </dl>
@@ -1130,7 +977,7 @@ const MediaGallery = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-3 sm:p-4 border-t border-gray-200 flex justify-between">
+            <div className="p-3 sm:p-4 border-t border-gray-200 flex justify-end">
               <button
                 onClick={closeModal}
                 className="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
@@ -1145,4 +992,4 @@ const MediaGallery = () => {
   );
 };
 
-export default MediaGallery;
+export default MediaGalleryEmployee;

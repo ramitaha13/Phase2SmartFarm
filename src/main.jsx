@@ -22,6 +22,7 @@ import Farmerassistant from "../src/components/farmerassistant.jsx";
 import Geminichat from "../src/components/geminichat.jsx";
 import Noteandmedia from "../src/components/note&media.jsx";
 import MediaViewerManager from "../src/components/mediaViewerManager.jsx";
+import MediaViewerEmployee from "../src/components/mediaViewerEmployee.jsx";
 
 const router = createBrowserRouter([
   {
@@ -167,6 +168,10 @@ const router = createBrowserRouter([
   {
     path: "/mediaViewerManager",
     element: <MediaViewerManager />,
+  },
+  {
+    path: "/mediaViewerEmployee",
+    element: <MediaViewerEmployee />,
   },
 ]);
 
