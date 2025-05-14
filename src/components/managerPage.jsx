@@ -413,7 +413,7 @@ const ManagerPage = () => {
             className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
           >
             <Droplets className="h-5 w-5" />
-            <span>Irrigation Control</span>
+            <span>Smart Farm Advisor</span>
           </button>
           <button
             onClick={handleRobotControllerClick}
@@ -532,7 +532,7 @@ const ManagerPage = () => {
               className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
             >
               <Droplets className="h-5 w-5" />
-              <span>Irrigation Control</span>
+              <span>Smart Farm Advisor</span>
             </button>
             <button
               onClick={handleRobotControllerClick}
