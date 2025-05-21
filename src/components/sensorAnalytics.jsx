@@ -29,10 +29,6 @@ import {
 import {
   LineChart,
   Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -62,7 +58,10 @@ const SensorAnalytics = () => {
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Data for charts
+  // Combined data for the unified chart
+  const [combinedData, setCombinedData] = useState([]);
+
+  // Individual sensor data for stats
   const [temperatureData, setTemperatureData] = useState([]);
   const [lightData, setLightData] = useState([]);
   const [soilData, setSoilData] = useState([]);
@@ -138,6 +137,50 @@ const SensorAnalytics = () => {
       setLoading(false);
     }
   }, []);
+
+  // Process the data for combined chart
+  const processCombinedData = (
+    tempData,
+    lightData,
+    soilData,
+    humidData,
+    pressData
+  ) => {
+    // Create a map of timestamps to readings
+    const timeMap = new Map();
+
+    // Helper function to add data points to the map
+    const addToMap = (dataArray, sensorName, unit = "") => {
+      dataArray.forEach((item) => {
+        const timeKey = item.timestamp.getTime(); // Use timestamp as a unique key
+
+        if (!timeMap.has(timeKey)) {
+          timeMap.set(timeKey, {
+            time: item.time,
+            timestamp: item.timestamp,
+          });
+        }
+
+        // Add sensor data to the time point
+        const mapItem = timeMap.get(timeKey);
+        mapItem[sensorName] = parseFloat(item.value);
+      });
+    };
+
+    // Add each sensor dataset to the map
+    if (tempData.length) addToMap(tempData, "temperature");
+    if (lightData.length) addToMap(lightData, "light");
+    if (soilData.length) addToMap(soilData, "soil");
+    if (humidData.length) addToMap(humidData, "humidity");
+    if (pressData.length) addToMap(pressData, "pressure");
+
+    // Convert map to array and sort by timestamp
+    const combinedArray = Array.from(timeMap.values()).sort(
+      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+    );
+
+    return combinedArray;
+  };
 
   // Fetch sensor data for different time ranges
   const fetchSensorData = async (range) => {
@@ -235,7 +278,17 @@ const SensorAnalytics = () => {
           }
         });
 
-        // Update chart data
+        // Create combined data for the unified chart
+        const combined = processCombinedData(
+          tempData,
+          lightData,
+          soilData,
+          humidData,
+          pressData
+        );
+        setCombinedData(combined);
+
+        // Update individual charts data
         setTemperatureData(tempData);
         setLightData(lightData);
         setSoilData(soilData);
@@ -279,6 +332,7 @@ const SensorAnalytics = () => {
         });
       } else {
         // If no data, set empty charts
+        setCombinedData([]);
         setTemperatureData([]);
         setLightData([]);
         setSoilData([]);
@@ -427,6 +481,94 @@ const SensorAnalytics = () => {
       default:
         return <ChevronLeft className="h-4 w-4 text-blue-600" />;
     }
+  };
+
+  // Get color for each sensor line
+  const getSensorColor = (sensor) => {
+    switch (sensor) {
+      case "temperature":
+        return "#ef4444";
+      case "light":
+        return "#f59e0b";
+      case "soil":
+        return "#22c55e";
+      case "humidity":
+        return "#3b82f6";
+      case "pressure":
+        return "#8b5cf6";
+      default:
+        return "#000000";
+    }
+  };
+
+  // Get unit for each sensor
+  const getSensorUnit = (sensor) => {
+    switch (sensor) {
+      case "temperature":
+        return "°C";
+      case "light":
+        return "lux";
+      case "soil":
+        return "";
+      case "humidity":
+        return "%";
+      case "pressure":
+        return "hPa";
+      default:
+        return "";
+    }
+  };
+
+  // Get label for each sensor
+  const getSensorLabel = (sensor) => {
+    switch (sensor) {
+      case "temperature":
+        return "Temperature";
+      case "light":
+        return "Light";
+      case "soil":
+        return "Soil Moisture";
+      case "humidity":
+        return "Air Humidity";
+      case "pressure":
+        return "Air Pressure";
+      default:
+        return sensor;
+    }
+  };
+
+  // Custom Tooltip content component for normalized values
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-md shadow-sm">
+          <p className="text-sm font-medium mb-2">{label}</p>
+          {payload.map((entry, index) => {
+            const sensorName = entry.dataKey.split("_")[0];
+            const unit = getSensorUnit(sensorName);
+            return (
+              <div
+                key={`item-${index}`}
+                className="flex items-center justify-between gap-3 mb-1"
+              >
+                <span className="text-xs flex items-center">
+                  <span
+                    className="h-2 w-2 rounded-full mr-1"
+                    style={{ backgroundColor: entry.color }}
+                  ></span>
+                  {getSensorLabel(sensorName)}:
+                </span>
+                <span className="text-xs font-medium">
+                  {entry.value}
+                  {unit}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+    return null;
   };
 
   // Loading state
@@ -926,269 +1068,170 @@ const SensorAnalytics = () => {
           )}
         </div>
 
-        {/* Main Charts */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        {/* Combined Chart */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Sensor Trends
+            Combined Sensor Data
           </h3>
 
-          {/* Individual Charts */}
-          <div className="space-y-6">
-            {/* Temperature Chart */}
-            {selectedSensors.includes("temperature") && (
-              <div className="border-b border-gray-100 pb-6">
-                <div className="flex items-center mb-2">
-                  <Thermometer className="h-5 w-5 text-red-500 mr-2" />
-                  <h4 className="font-medium text-gray-900">
-                    Temperature (°C)
-                  </h4>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={temperatureData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#f0f0f0"
-                      />
-                      <XAxis
-                        dataKey="time"
-                        tick={{ fontSize: 12 }}
-                        tickMargin={10}
-                      />
-                      <YAxis
-                        domain={["dataMin - 1", "dataMax + 1"]}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip
-                        contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                        formatter={(value) => [`${value}°C`, "Temperature"]}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#ef4444"
-                        fill="#fee2e2"
-                        activeDot={{ r: 6 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
+          {combinedData.length > 0 ? (
+            <div className="h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={combinedData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#f0f0f0"
+                  />
+                  <XAxis
+                    dataKey="time"
+                    tick={{ fontSize: 12 }}
+                    tickMargin={10}
+                    height={40}
+                  />
+                  <YAxis
+                    yAxisId="temp"
+                    orientation="left"
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => `${value}°C`}
+                    stroke={getSensorColor("temperature")}
+                    hide={!selectedSensors.includes("temperature")}
+                  />
+                  <YAxis
+                    yAxisId="light"
+                    orientation="right"
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => `${value}`}
+                    stroke={getSensorColor("light")}
+                    hide={!selectedSensors.includes("light")}
+                  />
+                  <YAxis
+                    yAxisId="soil"
+                    orientation="right"
+                    domain={[0, 100]}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => `${value}`}
+                    stroke={getSensorColor("soil")}
+                    hide={!selectedSensors.includes("soil")}
+                  />
+                  <YAxis
+                    yAxisId="humidity"
+                    orientation="right"
+                    domain={[0, 100]}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => `${value}%`}
+                    stroke={getSensorColor("humidity")}
+                    hide={!selectedSensors.includes("humidity")}
+                  />
+                  <YAxis
+                    yAxisId="pressure"
+                    orientation="right"
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => `${value}`}
+                    stroke={getSensorColor("pressure")}
+                    hide={!selectedSensors.includes("pressure")}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
 
-            {/* Light Chart */}
-            {selectedSensors.includes("light") && (
-              <div className="border-b border-gray-100 pb-6">
-                <div className="flex items-center mb-2">
-                  <Sun className="h-5 w-5 text-yellow-500 mr-2" />
-                  <h4 className="font-medium text-gray-900">Light (lux)</h4>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={lightData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#f0f0f0"
-                      />
-                      <XAxis
-                        dataKey="time"
-                        tick={{ fontSize: 12 }}
-                        tickMargin={10}
-                      />
-                      <YAxis
-                        domain={[0, "dataMax + 100"]}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip
-                        contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                        formatter={(value) => [`${value} lux`, "Light"]}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#f59e0b"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
+                  {selectedSensors.includes("temperature") && (
+                    <Line
+                      type="monotone"
+                      dataKey="temperature"
+                      name="Temperature"
+                      stroke={getSensorColor("temperature")}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 6 }}
+                      yAxisId="temp"
+                    />
+                  )}
 
-            {/* Soil Moisture Chart */}
-            {selectedSensors.includes("soil") && (
-              <div
-                className={
-                  selectedSensors.includes("humidity") ||
-                  selectedSensors.includes("pressure")
-                    ? "border-b border-gray-100 pb-6"
-                    : "pb-2"
-                }
-              >
-                <div className="flex items-center mb-2">
-                  <Sprout className="h-5 w-5 text-green-500 mr-2" />
-                  <h4 className="font-medium text-gray-900">Soil Moisture</h4>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={soilData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#f0f0f0"
-                      />
-                      <XAxis
-                        dataKey="time"
-                        tick={{ fontSize: 12 }}
-                        tickMargin={10}
-                      />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                      <Tooltip
-                        contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                        formatter={(value) => [`${value}`, "Soil Moisture"]}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#22c55e"
-                        fill="#dcfce7"
-                        activeDot={{ r: 6 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
+                  {selectedSensors.includes("light") && (
+                    <Line
+                      type="monotone"
+                      dataKey="light"
+                      name="Light"
+                      stroke={getSensorColor("light")}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 6 }}
+                      yAxisId="light"
+                    />
+                  )}
 
-            {/* Air Humidity Chart */}
-            {selectedSensors.includes("humidity") && (
-              <div
-                className={
-                  selectedSensors.includes("pressure")
-                    ? "border-b border-gray-100 pb-6"
-                    : "pb-2"
-                }
-              >
-                <div className="flex items-center mb-2">
-                  <svg
-                    className="h-5 w-5 text-blue-500 mr-2"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 2v6M12 22v-6M4.93 10.93l4.24 4.24M14.83 8.83l4.24 4.24M2 16h6M22 16h-6M10.93 19.07l4.24-4.24M8.83 5.17l4.24 4.24" />
-                  </svg>
-                  <h4 className="font-medium text-gray-900">
-                    Air Humidity (%)
-                  </h4>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={humidityData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#f0f0f0"
-                      />
-                      <XAxis
-                        dataKey="time"
-                        tick={{ fontSize: 12 }}
-                        tickMargin={10}
-                      />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                      <Tooltip
-                        contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                        formatter={(value) => [`${value}%`, "Air Humidity"]}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#3b82f6"
-                        fill="#dbeafe"
-                        activeDot={{ r: 6 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
+                  {selectedSensors.includes("soil") && (
+                    <Line
+                      type="monotone"
+                      dataKey="soil"
+                      name="Soil Moisture"
+                      stroke={getSensorColor("soil")}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 6 }}
+                      yAxisId="soil"
+                    />
+                  )}
 
-            {/* Air Pressure Chart */}
-            {selectedSensors.includes("pressure") && (
-              <div className="pb-2">
-                <div className="flex items-center mb-2">
-                  <svg
-                    className="h-5 w-5 text-purple-500 mr-2"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M8 12h8M12 8v8" />
-                  </svg>
-                  <h4 className="font-medium text-gray-900">
-                    Air Pressure (hPa)
-                  </h4>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={pressureData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#f0f0f0"
-                      />
-                      <XAxis
-                        dataKey="time"
-                        tick={{ fontSize: 12 }}
-                        tickMargin={10}
-                      />
-                      <YAxis
-                        domain={["auto", "auto"]}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip
-                        contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                        formatter={(value) => [`${value} hPa`, "Air Pressure"]}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#8b5cf6"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                  {selectedSensors.includes("humidity") && (
+                    <Line
+                      type="monotone"
+                      dataKey="humidity"
+                      name="Humidity"
+                      stroke={getSensorColor("humidity")}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 6 }}
+                      yAxisId="humidity"
+                    />
+                  )}
+
+                  {selectedSensors.includes("pressure") && (
+                    <Line
+                      type="monotone"
+                      dataKey="pressure"
+                      name="Pressure"
+                      stroke={getSensorColor("pressure")}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 6 }}
+                      yAxisId="pressure"
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+              <div className="text-center">
+                <p className="text-gray-500">
+                  No data available for the selected time range
+                </p>
+                <button
+                  onClick={handleRefresh}
+                  className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                >
+                  Refresh Data
+                </button>
               </div>
-            )}
+            </div>
+          )}
+
+          <div className="mt-4 bg-blue-50 p-3 rounded-md">
+            <div className="flex items-start text-sm text-blue-700">
+              <Info className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+              <p>
+                This chart combines all selected sensor data in a single view.
+                Each sensor has its own Y-axis for optimal visualization. Toggle
+                sensors using the controls above.
+              </p>
+            </div>
           </div>
         </div>
       </div>
