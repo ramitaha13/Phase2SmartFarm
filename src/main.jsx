@@ -21,6 +21,7 @@ import RobotController from "../src/components/robotController.jsx";
 import Farmerassistant from "../src/components/farmerassistant.jsx";
 import Geminichat from "../src/components/geminichat.jsx";
 import GeminiImageAnalyzer from "../src/components/GeminiImageAnalyzer.jsx";
+import SpatialModelDashboard from "../src/components/SpatialModelDashboard.jsx";
 
 const router = createBrowserRouter([
   {
@@ -164,6 +165,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <GeminiImageAnalyzer />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/SpatialModelDashboard",
+    element: (
+      <ProtectedRoute>
+        <SpatialModelDashboard />
       </ProtectedRoute>
     ),
   },

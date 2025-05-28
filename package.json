@@ -16,9 +16,12 @@
     "firebase": "^11.3.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.475.0",
+    "mathjs": "^14.5.0",
+    "plotly.js": "^3.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-leaflet": "^5.0.0",
+    "react-plotly.js": "^2.6.0",
     "react-router-dom": "^7.1.5",
     "recharts": "^2.15.2",
     "tailwindcss": "^4.0.6"
