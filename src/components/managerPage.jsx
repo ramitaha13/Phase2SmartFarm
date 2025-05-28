@@ -22,6 +22,7 @@ import {
   Bot,
   Gauge,
   Lightbulb,
+  Flower, // Changed from Plant to Flower which is available in lucide-react
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -323,6 +324,12 @@ const ManagerPage = () => {
     setSidebarOpen(false);
   };
 
+  // Add handler for Plant Health Analyzer button
+  const handlePlantAnalyzerClick = () => {
+    navigate("/GeminiImageAnalyzer");
+    setSidebarOpen(false);
+  };
+
   // 1) If still loading, show a loading state
   if (loading) {
     return (
@@ -428,6 +435,13 @@ const ManagerPage = () => {
           >
             <Lightbulb className="h-5 w-5" />
             <span>Farmer Assistant</span>
+          </button>
+          <button
+            onClick={handlePlantAnalyzerClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <Flower className="h-5 w-5" />
+            <span className="whitespace-nowrap">Plant Health Analyzer</span>
           </button>
           <button
             onClick={handleWeatherClick}
@@ -547,6 +561,13 @@ const ManagerPage = () => {
             >
               <Lightbulb className="h-5 w-5" />
               <span>Farmer Assistant</span>
+            </button>
+            <button
+              onClick={handlePlantAnalyzerClick}
+              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+            >
+              <Flower className="h-5 w-5" />
+              <span className="whitespace-nowrap">Plant Health Analyzer</span>
             </button>
             <button
               onClick={handleWeatherClick}
@@ -741,6 +762,57 @@ const ManagerPage = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Add a new section highlighting the Plant Health Analyzer */}
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">
+                Plant Health Tools
+              </h2>
+              <button
+                onClick={handlePlantAnalyzerClick}
+                className="text-green-600 text-sm hover:text-green-800 flex items-center"
+              >
+                Open Analyzer <ArrowRight className="h-4 w-4 ml-1" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Plant Health Analyzer Card */}
+              <div
+                onClick={handlePlantAnalyzerClick}
+                className="bg-green-50 rounded-lg p-4 flex items-start space-x-4 cursor-pointer hover:bg-green-100 transition-colors"
+              >
+                <Flower className="h-10 w-10 text-green-600 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-1">
+                    Plant Health Analyzer
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Upload plant photos to diagnose issues, assess watering
+                    needs, and get care recommendations
+                  </p>
+                </div>
+              </div>
+
+              {/* Smart Farm Advisor Card */}
+              <div
+                onClick={handleIrrigationClick}
+                className="bg-blue-50 rounded-lg p-4 flex items-start space-x-4 cursor-pointer hover:bg-blue-100 transition-colors"
+              >
+                <Droplets className="h-10 w-10 text-blue-600 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-1">
+                    Smart Farm Advisor
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Get AI-powered recommendations based on sensor data for
+                    optimal plant care
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </main>
       </div>

@@ -20,6 +20,7 @@ import SensorAnalytics from "../src/components/sensorAnalytics.jsx";
 import RobotController from "../src/components/robotController.jsx";
 import Farmerassistant from "../src/components/farmerassistant.jsx";
 import Geminichat from "../src/components/geminichat.jsx";
+import GeminiImageAnalyzer from "../src/components/GeminiImageAnalyzer.jsx";
 
 const router = createBrowserRouter([
   {
@@ -155,6 +156,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Geminichat />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/GeminiImageAnalyzer",
+    element: (
+      <ProtectedRoute>
+        <GeminiImageAnalyzer />
       </ProtectedRoute>
     ),
   },
