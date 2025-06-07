@@ -5,7 +5,6 @@ import {
   Thermometer,
   Sun,
   Sprout,
-  ChevronRight,
   RefreshCw,
   BarChart,
   AlertTriangle,
@@ -333,10 +332,6 @@ const SensorsPage = () => {
     }
   };
 
-  const handleViewSensorDetails = (sensorType) => {
-    navigate(`/sensor/${sensorType}`);
-  };
-
   // If still loading, show a loading state
   if (loading) {
     return (
@@ -429,13 +424,6 @@ const SensorsPage = () => {
               <div className="h-24 bg-gray-50 rounded flex items-center justify-center mb-4">
                 <BarChart className="h-16 w-16 text-gray-300" />
               </div>
-              <button
-                onClick={() => handleViewSensorDetails("temperature")}
-                className="w-full flex items-center justify-center space-x-1 py-2 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                <span>View Details</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
             </div>
           </div>
 
@@ -471,13 +459,6 @@ const SensorsPage = () => {
               <div className="h-24 bg-gray-50 rounded flex items-center justify-center mb-4">
                 <BarChart className="h-16 w-16 text-gray-300" />
               </div>
-              <button
-                onClick={() => handleViewSensorDetails("light")}
-                className="w-full flex items-center justify-center space-x-1 py-2 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                <span>View Details</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
             </div>
           </div>
 
@@ -514,13 +495,6 @@ const SensorsPage = () => {
               <div className="h-24 bg-gray-50 rounded flex items-center justify-center mb-4">
                 <BarChart className="h-16 w-16 text-gray-300" />
               </div>
-              <button
-                onClick={() => handleViewSensorDetails("soil-moisture")}
-                className="w-full flex items-center justify-center space-x-1 py-2 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                <span>View Details</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
             </div>
           </div>
 
@@ -567,13 +541,6 @@ const SensorsPage = () => {
               <div className="h-24 bg-gray-50 rounded flex items-center justify-center mb-4">
                 <BarChart className="h-16 w-16 text-gray-300" />
               </div>
-              <button
-                onClick={() => handleViewSensorDetails("air-humidity")}
-                className="w-full flex items-center justify-center space-x-1 py-2 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                <span>View Details</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
             </div>
           </div>
 
@@ -621,13 +588,6 @@ const SensorsPage = () => {
               <div className="h-24 bg-gray-50 rounded flex items-center justify-center mb-4">
                 <BarChart className="h-16 w-16 text-gray-300" />
               </div>
-              <button
-                onClick={() => handleViewSensorDetails("air-pressure")}
-                className="w-full flex items-center justify-center space-x-1 py-2 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                <span>View Details</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
             </div>
           </div>
         </div>

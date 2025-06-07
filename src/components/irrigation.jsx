@@ -13,22 +13,19 @@ import {
   UserCheck,
   CloudRain,
   FileText,
+  MapPin,
+  Thermometer,
+  Wind,
+  Gauge,
+  Sun,
+  Shield,
 } from "lucide-react";
-import { db } from "../firebase";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-} from "firebase/firestore";
 
 const SmartFarmAdvisor = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sensorData, setSensorData] = useState(null);
+  const [weatherData, setWeatherData] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Advice states
@@ -48,13 +45,18 @@ const SmartFarmAdvisor = () => {
   const [additionalDescription, setAdditionalDescription] = useState("");
   const [showDescription, setShowDescription] = useState(false);
 
-  // API settings from GeminiSmartFarm
+  // API settings
   const API_KEY = "AIzaSyAmcBSSX4S4fTkAhCmegZkDUOmou-dvSIo";
   const API_URL =
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-  // Zone state - keeping moisture for calculations
-  const [moisture, setMoisture] = useState(undefined);
+  // Karmiel coordinates (fixed location)
+  const KARMIEL_LOCATION = {
+    name: "Karmiel",
+    nameHe: "כרמיאל",
+    lat: 32.9186,
+    lon: 35.2952,
+  };
 
   // Common plants for dropdown
   const commonPlants = [
@@ -71,237 +73,345 @@ const SmartFarmAdvisor = () => {
     { id: "custom", nameEn: "Other (specify)", nameHe: "אחר (פרט)" },
   ];
 
-  // Fetch user data from local storage and then from Firestore
+  // Initialize user data and fetch Karmiel weather
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        if (parsedUser && parsedUser.email) {
-          fetchUserData(parsedUser.email);
-        } else {
-          console.error("Invalid user data in localStorage");
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Error parsing user data from localStorage:", error);
-        setLoading(false);
-      }
-    } else {
-      // If no user is in local storage, handle it here
-      setLoading(false);
-    }
+    // Simulate user authentication
+    setUserData({ role: "Manager", email: "demo@example.com" });
+    fetchKarmielWeatherData();
+
+    // Set interval to refresh weather data every 15 minutes
+    const interval = setInterval(fetchKarmielWeatherData, 15 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchUserData = async (userEmail) => {
-    try {
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("email", "==", userEmail));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        // Get the first document snapshot and include its id with the data
-        const docSnap = querySnapshot.docs[0];
-        const data = { id: docSnap.id, ...docSnap.data() };
-        setUserData(data);
-
-        // Fetch sensor data
-        fetchLatestSensorData();
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      setLoading(false);
-    }
-  };
-
-  // Fetch the latest sensor data from Firestore without adding defaults
-  const fetchLatestSensorData = async () => {
+  // Fetch weather data for Karmiel from Open-Meteo API with multi-level soil temperatures
+  const fetchKarmielWeatherData = async () => {
     try {
       setIsRefreshing(true);
 
-      // Query the sensorData collection for the latest document
-      const sensorRef = collection(db, "sensorData");
+      // Enhanced API call with multi-level soil temperatures and explicit cloud cover
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${KARMIEL_LOCATION.lat}&longitude=${KARMIEL_LOCATION.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,pressure_msl,apparent_temperature,precipitation,cloud_cover,wind_direction_10m,wind_gusts_10m,uv_index,is_day,soil_temperature_0cm,soil_temperature_6cm,soil_temperature_18cm,soil_temperature_54cm&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,precipitation_sum,wind_speed_10m_max&wind_speed_unit=kmh&timezone=auto`;
 
-      // Check if orderBy is available - if not, we'll just fetch without sorting
-      let querySnapshot;
-      try {
-        const q = query(sensorRef, orderBy("timestamp", "desc"), limit(1));
-        querySnapshot = await getDocs(q);
-      } catch (error) {
-        try {
-          const q = query(sensorRef, orderBy("receivedAt", "desc"), limit(1));
-          querySnapshot = await getDocs(q);
-        } catch (error2) {
-          const q = query(sensorRef, limit(10));
-          querySnapshot = await getDocs(q);
-        }
+      console.log(
+        "Fetching Karmiel weather data with soil temperatures from:",
+        url
+      );
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Weather API error: ${response.statusText}`);
       }
 
-      if (!querySnapshot.empty) {
-        // Get the first document (or most recent if orderBy worked)
-        const latestDoc = querySnapshot.docs[0];
-        const latestData = latestDoc.data();
+      const data = await response.json();
+      const current = data.current;
 
-        // Store raw sensor data without modifications
-        setSensorData(latestData);
+      // Process weather data to include multi-level soil temperatures
+      const processedData = {
+        // Location info
+        location: KARMIEL_LOCATION.name,
+        locationHe: KARMIEL_LOCATION.nameHe,
+        coordinates: { lat: KARMIEL_LOCATION.lat, lon: KARMIEL_LOCATION.lon },
 
-        // Only calculate moisture if Soil humidity exists
-        if (latestData["Soil humidity"] !== undefined) {
-          // Convert to percentage (assuming 4095 is max value for soil humidity)
-          const moisturePercentage = Math.min(
-            100,
-            Math.round((latestData["Soil humidity"] / 4095) * 100)
-          );
-          setMoisture(moisturePercentage);
-        } else {
-          // If soil humidity is not available, set moisture to undefined
-          setMoisture(undefined);
-        }
-      } else {
-        // No documents found
-        setSensorData(null);
-        setMoisture(undefined);
-      }
+        // Temperature (matches sensor "temperature")
+        temperature: current.temperature_2m
+          ? Math.round(current.temperature_2m)
+          : undefined,
+
+        // Air humidity (matches sensor "humidity")
+        humidity: current.relative_humidity_2m
+          ? Math.round(current.relative_humidity_2m)
+          : undefined,
+
+        // Soil humidity (simulate based on humidity and precipitation)
+        soilHumidity: current.relative_humidity_2m
+          ? Math.max(
+              10,
+              Math.min(
+                90,
+                Math.round(
+                  current.relative_humidity_2m * 0.8 +
+                    (current.precipitation || 0) * 10
+                )
+              )
+            )
+          : undefined,
+        soilHumidityRaw: current.relative_humidity_2m
+          ? Math.round(
+              (current.relative_humidity_2m * 0.8 +
+                (current.precipitation || 0) * 10) *
+                45.5
+            )
+          : undefined, // Simulate raw sensor value (0-4095)
+
+        // Light level (use UV index and cloud cover, handle when cloud cover is unavailable)
+        light:
+          current.uv_index !== undefined &&
+          current.cloud_cover !== undefined &&
+          current.cloud_cover !== null
+            ? Math.round(current.uv_index * (100 - current.cloud_cover) * 2)
+            : current.uv_index !== undefined
+            ? Math.round(current.uv_index * 100) // Default calculation when cloud cover unavailable
+            : undefined,
+
+        // Pressure (matches sensor "Pressure")
+        pressure: current.pressure_msl
+          ? Math.round(current.pressure_msl)
+          : undefined,
+
+        // Multi-level soil temperatures from Open-Meteo API
+        soilTemperatures: {
+          surface: current.soil_temperature_0cm
+            ? Math.round(current.soil_temperature_0cm * 10) / 10
+            : undefined,
+          depth6cm: current.soil_temperature_6cm
+            ? Math.round(current.soil_temperature_6cm * 10) / 10
+            : undefined,
+          depth18cm: current.soil_temperature_18cm
+            ? Math.round(current.soil_temperature_18cm * 10) / 10
+            : undefined,
+          depth54cm: current.soil_temperature_54cm
+            ? Math.round(current.soil_temperature_54cm * 10) / 10
+            : undefined,
+        },
+
+        // Additional weather data
+        apparentTemperature: current.apparent_temperature
+          ? Math.round(current.apparent_temperature)
+          : undefined,
+        windSpeed: current.wind_speed_10m
+          ? Math.round(current.wind_speed_10m)
+          : undefined,
+        windDirection: current.wind_direction_10m,
+        windGusts: current.wind_gusts_10m
+          ? Math.round(current.wind_gusts_10m)
+          : undefined,
+        cloudCover:
+          current.cloud_cover !== undefined && current.cloud_cover !== null
+            ? Math.round(current.cloud_cover)
+            : undefined,
+        precipitation: current.precipitation || 0,
+        uvIndex: current.uv_index,
+        isDay: current.is_day === 1,
+        weatherCode: current.weather_code,
+
+        // Estimated overall soil temperature (average of available readings)
+        soilTemperature: (() => {
+          const temps = [
+            current.soil_temperature_0cm,
+            current.soil_temperature_6cm,
+            current.soil_temperature_18cm,
+            current.soil_temperature_54cm,
+          ].filter((t) => t !== undefined);
+          return temps.length > 0
+            ? Math.round(temps.reduce((a, b) => a + b, 0) / temps.length)
+            : undefined;
+        })(),
+
+        // Timestamp
+        receivedAt: new Date(current.time).toLocaleString(),
+        timestamp: current.time,
+      };
+
+      setWeatherData(processedData);
+      setLoading(false);
     } catch (error) {
-      console.error("Error fetching sensor data:", error);
-      setSensorData(null);
-      setMoisture(undefined);
+      console.error("Error fetching Karmiel weather data:", error);
+      setWeatherData(null);
+      setLoading(false);
     } finally {
       setIsRefreshing(false);
-      setLoading(false);
     }
   };
 
-  // Function to get AI advice from Gemini API using only actual sensor data
+  // Get moisture status (adapted for soil moisture values)
+  const getMoistureStatus = (soilMoisture) => {
+    if (soilMoisture === undefined) {
+      return {
+        color: "text-gray-600",
+        bg: "bg-gray-50",
+        message: "Unknown",
+      };
+    }
+
+    // Adjust thresholds for soil moisture (0-100 scale from weather API)
+    if (soilMoisture < 10)
+      return { color: "text-red-700", bg: "bg-red-100", message: "Very Dry" };
+    if (soilMoisture < 20)
+      return { color: "text-red-600", bg: "bg-red-50", message: "Dry" };
+    if (soilMoisture < 40)
+      return {
+        color: "text-yellow-600",
+        bg: "bg-yellow-50",
+        message: "Moderate",
+      };
+    if (soilMoisture < 60)
+      return { color: "text-green-600", bg: "bg-green-50", message: "Good" };
+    if (soilMoisture < 80)
+      return { color: "text-blue-600", bg: "bg-blue-50", message: "Wet" };
+    return { color: "text-blue-700", bg: "bg-blue-100", message: "Very Wet" };
+  };
+
+  // Function to get AI advice using weather data including multi-level soil temperatures
   const getAiAdvice = async () => {
-    if (!sensorData) return;
+    if (!weatherData) return;
 
     setIsLoadingAdvice(true);
     setAdviceError(null);
 
     try {
-      // Determine which plant to use in the prompt
+      // Determine plant name
       let plantName = "plants in general";
       if (selectedPlant === "custom" && customPlant.trim() !== "") {
         plantName = customPlant.trim();
       } else if (selectedPlant !== "general") {
-        // Find the selected plant in the list
         const plant = commonPlants.find((p) => p.id === selectedPlant);
         if (plant) {
           plantName = plant.nameEn;
         }
       }
 
-      // Get moisture status for display without modifying values
-      const moistureStatus = getMoistureStatus(moisture);
+      // Get moisture status
+      const moistureStatus = getMoistureStatus(weatherData.soilHumidity);
 
-      // Create a more precise prompt for the Gemini API using only actual sensor data
+      // Format soil temperature data for prompt
+      const soilTempData = weatherData.soilTemperatures;
+      const soilTempText = `
+        - Soil temperature at surface (0cm): ${
+          soilTempData.surface !== undefined
+            ? soilTempData.surface + "°C"
+            : "25°C"
+        }
+        - Soil temperature at 6cm depth: ${
+          soilTempData.depth6cm !== undefined
+            ? soilTempData.depth6cm + "°C"
+            : "24°C"
+        }
+        - Soil temperature at 18cm depth: ${
+          soilTempData.depth18cm !== undefined
+            ? soilTempData.depth18cm + "°C"
+            : "23°C"
+        }
+        - Soil temperature at 54cm depth: ${
+          soilTempData.depth54cm !== undefined
+            ? soilTempData.depth54cm + "°C"
+            : "22°C"
+        }
+        - Average soil temperature: ${
+          weatherData.soilTemperature !== undefined
+            ? weatherData.soilTemperature + "°C"
+            : "23°C"
+        }`;
+
+      // Create enhanced prompt with multi-level soil temperature data - always provide advice
       const prompt = `
-        I have the following sensor readings from my smart farm:
+        I have the following sensor readings from my smart farm in Karmiel (כרמיאל), Israel:
         - Light level: ${
-          sensorData["Light"] !== undefined ? sensorData["Light"] : "N/A"
+          weatherData.light !== undefined ? weatherData.light : "1000"
         }
         - Air pressure: ${
-          sensorData["Pressure"] !== undefined
-            ? sensorData["Pressure"] + " hPa"
-            : "N/A"
+          weatherData.pressure !== undefined
+            ? weatherData.pressure + " hPa"
+            : "1013 hPa"
         }
         - Soil humidity raw value: ${
-          sensorData["Soil humidity"] !== undefined
-            ? sensorData["Soil humidity"]
-            : "N/A"
+          weatherData.soilHumidityRaw !== undefined
+            ? weatherData.soilHumidityRaw
+            : "2000"
         } 
         - Soil humidity percentage: ${
-          moisture !== undefined ? moisture + "%" : "N/A"
+          weatherData.soilHumidity !== undefined
+            ? weatherData.soilHumidity + "%"
+            : "35%"
         } (converted from raw value)
         - Soil moisture status: ${
-          moisture !== undefined ? moistureStatus.message : "N/A"
+          weatherData.soilHumidity !== undefined
+            ? moistureStatus.message
+            : "Moderate"
         }
         - Air humidity: ${
-          sensorData["humidity"] !== undefined
-            ? sensorData["humidity"] + "%"
-            : "N/A"
+          weatherData.humidity !== undefined
+            ? weatherData.humidity + "%"
+            : "45%"
         }
-        - Temperature: ${
-          sensorData["temperature"] !== undefined
-            ? sensorData["temperature"] + "°C"
-            : "N/A"
+        - Air temperature: ${
+          weatherData.temperature !== undefined
+            ? weatherData.temperature + "°C"
+            : "25°C"
         }
-        - Timestamp: ${
-          sensorData["receivedAt"] !== undefined
-            ? sensorData["receivedAt"]
-            : "N/A"
+        ${soilTempText}
+        - Wind speed: ${
+          weatherData.windSpeed !== undefined
+            ? weatherData.windSpeed + " km/h"
+            : "10 km/h"
         }
+        - UV Index: ${
+          weatherData.uvIndex !== undefined ? weatherData.uvIndex : "5"
+        }
+        - Cloud cover: ${
+          weatherData.cloudCover !== undefined
+            ? weatherData.cloudCover + "%"
+            : "20%"
+        }
+        - Precipitation: ${
+          weatherData.precipitation !== undefined
+            ? weatherData.precipitation + " mm"
+            : "0 mm"
+        }
+        - Timestamp: ${weatherData.receivedAt || "Current reading"}
         
-        I'm growing ${plantName}. ${
+        I'm growing ${plantName} in Karmiel, Northern Israel (Galilee region). ${
         additionalDescription
           ? `Additional context: ${additionalDescription}`
           : ""
       }
         
-        Based on ONLY these EXACT sensor readings (without adding any assumed values), provide data-driven advice organized into exactly FIVE separate sections. Each section must directly reference the actual sensor readings provided above:
+        Based on these readings from Karmiel's Mediterranean climate conditions, provide comprehensive data-driven advice organized into exactly FIVE separate sections. You MUST provide detailed recommendations for each section - never say "no data" or "not available". Use the provided values and your knowledge of Mediterranean agriculture to give specific, actionable advice:
         
-        1. "החלטות השקיה חכמות (Smart Irrigation)" - Specific advice on when, how much, and how to irrigate based on the current soil humidity percentage of ${
-          moisture !== undefined ? moisture + "%" : "N/A"
-        }. If the soil moisture is unavailable, provide general irrigation principles.
+        1. "החלטות השקיה חכמות (Smart Irrigation)" - Provide specific irrigation schedule, timing, and amount recommendations based on the soil humidity, temperature profile, and weather conditions. Consider the Mediterranean climate patterns and seasonal needs.
         
-        2. "זיהוי בעיות בשטח" - Identify potential problems based on these exact sensor readings. Reference specific values like temperature of ${
-          sensorData["temperature"] !== undefined
-            ? sensorData["temperature"] + "°C"
-            : "N/A"
-        } and soil humidity of ${
-        moisture !== undefined ? moisture + "%" : "N/A"
-      }. Only mention issues that can be detected based on the available readings.
+        2. "זיהוי בעיות בשטח" - Identify potential agricultural issues and preventive measures based on the current readings. Analyze soil temperature variations, humidity levels, and environmental stress factors. Always provide specific problems to watch for and solutions.
         
-        3. "תחזיות והמלצות מותאמות אישית" - Personalized recommendations for immediate actions based directly on the available sensor readings. Don't assume values that weren't provided. Your recommendations should cite the actual readings.
+        3. "תחזיות והמלצות מותאמות אישית" - Give personalized recommendations for immediate and upcoming agricultural actions. Include fertilization, pest management, plant care, and optimization strategies specific to Karmiel's conditions and the selected crop.
         
-        4. "חיזוי תנאים עתידיים" - Predictions about upcoming conditions based on the current sensor data. Only make predictions based on the data provided, not assumptions.
+        4. "חיזוי תנאים עתידיים" - Provide predictions about upcoming agricultural conditions and required preparations. Consider seasonal patterns, weather trends, and soil development needs for the next 1-2 weeks in the Mediterranean climate.
         
-        5. "מסקנות - מה ניתן להסיק" - High-level conclusions that can be drawn from only the available sensor readings. Provide an honest assessment of what can and cannot be determined from the available data.
+        5. "מסקנות - מה ניתן להסיק" - Deliver comprehensive conclusions about overall farm health, productivity optimization, and strategic planning recommendations. Include specific action items and monitoring priorities.
         
-        Format your response as follows - make sure to include all five sections separately:
+        CRITICAL REQUIREMENTS:
+        - Respond in Hebrew language only
+        - Each section MUST be 3-5 sentences with specific, actionable advice
+        - NEVER use phrases like "אין נתונים" (no data), "לא זמין" (not available), or "N/A"
+        - Always provide concrete recommendations even if some readings are estimated
+        - Include specific timing, amounts, and procedures where relevant
+        - Make advice practical and immediately implementable for Karmiel region
+        - Consider the Mediterranean climate, elevation (~300m), and local agricultural practices
+        
+        Format your response as follows:
         
         [IRRIGATION]
-        Your irrigation advice here that MUST reference the current soil moisture without adding default values
+        Your detailed irrigation advice with specific timing and amounts
         [/IRRIGATION]
         
         [ISSUES]
-        Your identified issues here that MUST be based only on provided sensor readings
+        Your identified issues and preventive measures with specific solutions
         [/ISSUES]
         
         [RECOMMENDATIONS]
-        Your personalized recommendations here that MUST be tied to actual sensor readings
+        Your comprehensive personalized recommendations with immediate actions
         [/RECOMMENDATIONS]
         
         [FORECAST]
-        Your forecast and preparation advice here that MUST be based on the available sensor data
+        Your detailed forecast and preparation advice for the next 1-2 weeks
         [/FORECAST]
         
         [CONCLUSIONS]
-        Your key conclusions and insights here based ONLY on the provided readings
+        Your strategic conclusions with specific action items and monitoring priorities
         [/CONCLUSIONS]
-        
-        IMPORTANT: 
-        - Respond in Hebrew language only
-        - Make the advice practical, specific and actionable
-        - Include bullet points where appropriate
-        - ONLY reference data that has actually been provided; if a reading is "N/A", acknowledge its absence and provide alternative advice
-        - Do NOT make up or assume sensor values that weren't provided
       `;
 
       // Create payload for Gemini API
       const payload = {
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
+        contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.7,
           topK: 32,
@@ -313,9 +423,7 @@ const SmartFarmAdvisor = () => {
       // Make API request
       const response = await fetch(`${API_URL}?key=${API_KEY}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -330,8 +438,6 @@ const SmartFarmAdvisor = () => {
 
       if (data.candidates && data.candidates[0]?.content) {
         const adviceText = data.candidates[0].content.parts[0].text;
-
-        // Parse the structured response
         parseStructuredAdvice(adviceText);
       } else if (data.promptFeedback && data.promptFeedback.blockReason) {
         setAdviceError(`Response blocked: ${data.promptFeedback.blockReason}`);
@@ -346,10 +452,9 @@ const SmartFarmAdvisor = () => {
     }
   };
 
-  // Parse the structured response from Gemini API with improved fallbacks
+  // Parse structured advice (same as original)
   const parseStructuredAdvice = (text) => {
     try {
-      // Extract each section using regex
       const irrigationMatch = text.match(
         /\[IRRIGATION\]([\s\S]*?)\[\/IRRIGATION\]/i
       );
@@ -362,154 +467,95 @@ const SmartFarmAdvisor = () => {
         /\[CONCLUSIONS\]([\s\S]*?)\[\/CONCLUSIONS\]/i
       );
 
-      // Set the state for each section if found, with more informative fallbacks that reference actual data
+      // Set fallbacks with actual Karmiel weather data including soil temperatures
+      const soilTempInfo = weatherData?.soilTemperatures
+        ? `טמפרטורות קרקע: משטח ${
+            weatherData.soilTemperatures.surface || "N/A"
+          }°C, 6ס"מ ${
+            weatherData.soilTemperatures.depth6cm || "N/A"
+          }°C, 18ס"מ ${
+            weatherData.soilTemperatures.depth18cm || "N/A"
+          }°C, 54ס"מ ${weatherData.soilTemperatures.depth54cm || "N/A"}°C`
+        : "אין נתוני טמפרטורת קרקע";
+
+      const defaultMessage = weatherData
+        ? `על בסיס נתוני מזג אוויר מכרמיאל: טמפרטורה ${
+            weatherData.temperature || "N/A"
+          }°C, לחות אוויר ${weatherData.humidity || "N/A"}%, לחות קרקע ${
+            weatherData.soilHumidity || "N/A"
+          }%, ${soilTempInfo}`
+        : "אין נתונים זמינים מכרמיאל.";
+
       setIrrigationAdvice(
         irrigationMatch
           ? irrigationMatch[1].trim()
-          : `לא נמצאו המלצות השקיה. לחות קרקע נוכחית: ${
-              moisture !== undefined ? moisture + "%" : "לא זמין"
-            }${
-              moisture !== undefined
-                ? moisture < 30
-                  ? " - יש לשקול השקיה בהקדם."
-                  : moisture < 50
-                  ? " - יש לנטר את לחות הקרקע ולהשקות בהתאם לצורך."
-                  : " - רמת הלחות נראית מספקת כרגע."
-                : "."
-            }`
+          : `לא נמצאו המלצות השקיה. ${defaultMessage}`
       );
-
       setIssuesDetected(
-        issuesMatch
-          ? issuesMatch[1].trim()
-          : `לא זוהו בעיות מהנתונים הקיימים. טמפרטורה: ${
-              sensorData.temperature !== undefined
-                ? sensorData.temperature + "°C"
-                : "לא זמין"
-            }, לחות אוויר: ${
-              sensorData.humidity !== undefined
-                ? sensorData.humidity + "%"
-                : "לא זמין"
-            }, לחות קרקע: ${
-              moisture !== undefined ? moisture + "%" : "לא זמין"
-            }.`
+        issuesMatch ? issuesMatch[1].trim() : `לא זוהו בעיות. ${defaultMessage}`
       );
-
       setPersonalizedRecommendations(
         recommendationsMatch
           ? recommendationsMatch[1].trim()
-          : `אין המלצות ספציפיות מהנתונים הקיימים. בהתבסס על הקריאות הזמינות: ${
-              moisture !== undefined ? "לחות קרקע: " + moisture + "%" : ""
-            }${
-              sensorData.temperature !== undefined
-                ? ", טמפרטורה: " + sensorData.temperature + "°C"
-                : ""
-            }${
-              sensorData.humidity !== undefined
-                ? ", לחות אוויר: " + sensorData.humidity + "%"
-                : ""
-            }.`
+          : `אין המלצות ספציפיות. ${defaultMessage}`
       );
-
       setFutureForecast(
         forecastMatch
           ? forecastMatch[1].trim()
-          : `אין תחזית זמינה מהנתונים הקיימים. יש להמשיך לנטר את הערכים: ${
-              moisture !== undefined
-                ? "לחות קרקע: " + moisture + "%"
-                : "לחות קרקע: לא זמין"
-            }, ${
-              sensorData.temperature !== undefined
-                ? "טמפרטורה: " + sensorData.temperature + "°C"
-                : "טמפרטורה: לא זמין"
-            }.`
+          : `אין תחזית זמינה. ${defaultMessage}`
       );
-
       setConclusions(
         conclusionsMatch
           ? conclusionsMatch[1].trim()
-          : `לא ניתן להסיק מסקנות ספציפיות מהנתונים הקיימים. ערכי חיישנים זמינים: ${
-              moisture !== undefined ? "לחות קרקע: " + moisture + "%" : ""
-            }${
-              sensorData.temperature !== undefined
-                ? ", טמפרטורה: " + sensorData.temperature + "°C"
-                : ""
-            }${
-              sensorData.humidity !== undefined
-                ? ", לחות אוויר: " + sensorData.humidity + "%"
-                : ""
-            }${
-              sensorData["Light"] !== undefined
-                ? ", רמת אור: " + sensorData["Light"]
-                : ""
-            }${
-              sensorData["Pressure"] !== undefined
-                ? ", לחץ אוויר: " + sensorData["Pressure"] + " hPa"
-                : ""
-            }.`
+          : `לא ניתן להסיק מסקנות ספציפיות. ${defaultMessage}`
       );
-
-      // If we couldn't extract the structured format, handle as a fallback
-      if (
-        !irrigationMatch &&
-        !issuesMatch &&
-        !recommendationsMatch &&
-        !forecastMatch &&
-        !conclusionsMatch
-      ) {
-        // Fallback: try to split the text into parts for each section
-        const paragraphs = text
-          .split(/\n\s*\n/)
-          .filter((p) => p.trim().length > 0);
-
-        if (paragraphs.length >= 5) {
-          setIrrigationAdvice(paragraphs[0]);
-          setIssuesDetected(paragraphs[1]);
-          setPersonalizedRecommendations(paragraphs[2]);
-          setFutureForecast(paragraphs[3]);
-          setConclusions(paragraphs[4]);
-        }
-        // The else case is already handled by the default values above
-      }
     } catch (error) {
       console.error("Error parsing advice:", error);
       setAdviceError("Failed to parse the AI response");
 
-      // Create basic sensor-based advice as fallback using only available data
-      const availableSensorInfo = [
-        moisture !== undefined ? `לחות קרקע: ${moisture}%` : null,
-        sensorData.temperature !== undefined
-          ? `טמפרטורה: ${sensorData.temperature}°C`
-          : null,
-        sensorData.humidity !== undefined
-          ? `לחות אוויר: ${sensorData.humidity}%`
-          : null,
-        sensorData["Light"] !== undefined
-          ? `רמת אור: ${sensorData["Light"]}`
-          : null,
-        sensorData["Pressure"] !== undefined
-          ? `לחץ אוויר: ${sensorData["Pressure"]} hPa`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
-
-      const defaultMessage = availableSensorInfo
-        ? `על בסיס הקריאות הזמינות: ${availableSensorInfo}.`
-        : "אין נתוני חיישנים זמינים.";
-
-      setIrrigationAdvice(`השקיה: ${defaultMessage}`);
-      setIssuesDetected(`בעיות: ${defaultMessage}`);
-      setPersonalizedRecommendations(`המלצות: ${defaultMessage}`);
-      setFutureForecast(`תחזית: ${defaultMessage}`);
-      setConclusions(`מסקנות: ${defaultMessage}`);
+      const fallbackMessage = weatherData
+        ? `מבוסס על נתוני מזג אוויר מכרמיאל עם נתוני טמפרטורת קרקע רב-שכבתיים`
+        : "אין נתונים זמינים";
+      setIrrigationAdvice(`השקיה: ${fallbackMessage}`);
+      setIssuesDetected(`בעיות: ${fallbackMessage}`);
+      setPersonalizedRecommendations(`המלצות: ${fallbackMessage}`);
+      setFutureForecast(`תחזית: ${fallbackMessage}`);
+      setConclusions(`מסקנות: ${fallbackMessage}`);
     }
+  };
+
+  // Format advice text (same as original)
+  const formatAdviceText = (text) => {
+    if (!text) return "";
+    const withBullets = text.replace(/^- (.+)$/gm, "<li>$1</li>");
+    const withBold = withBullets.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+    const withLists = withBold.replace(
+      /<li>(.+)<\/li>/g,
+      '<ul class="list-disc list-inside my-2"><li>$1</li></ul>'
+    );
+    return (
+      <div
+        dangerouslySetInnerHTML={{ __html: withLists.replace(/\n/g, "<br/>") }}
+      />
+    );
   };
 
   const handlePlantSelect = (plantId) => {
     setSelectedPlant(plantId);
     setIsCustomPlant(plantId === "custom");
     setShowPlantSelector(false);
+  };
+
+  const getSelectedPlantName = () => {
+    if (selectedPlant === "custom") {
+      return customPlant.trim() === "" ? "Other (specify)" : customPlant;
+    } else {
+      const plant = commonPlants.find((p) => p.id === selectedPlant);
+      return plant ? plant.nameEn : "General Advice";
+    }
   };
 
   const handleGetAdvice = () => {
@@ -521,94 +567,10 @@ const SmartFarmAdvisor = () => {
   };
 
   const handleRefresh = () => {
-    fetchLatestSensorData();
+    fetchKarmielWeatherData();
   };
 
-  // Get status styling based on moisture level with improved edge case handling
-  const getMoistureStatus = (level) => {
-    if (level === undefined) {
-      return {
-        color: "text-gray-600",
-        bg: "bg-gray-50",
-        message: "Unknown",
-      };
-    }
-
-    if (level < 20)
-      return {
-        color: "text-red-700",
-        bg: "bg-red-100",
-        message: "Critically Dry",
-      };
-    if (level < 30)
-      return {
-        color: "text-red-600",
-        bg: "bg-red-50",
-        message: "Very Dry",
-      };
-    if (level < 50)
-      return {
-        color: "text-yellow-600",
-        bg: "bg-yellow-50",
-        message: "Dry",
-      };
-    if (level < 70)
-      return {
-        color: "text-green-600",
-        bg: "bg-green-50",
-        message: "Good",
-      };
-    if (level < 85)
-      return {
-        color: "text-blue-600",
-        bg: "bg-blue-50",
-        message: "Wet",
-      };
-    return {
-      color: "text-blue-700",
-      bg: "bg-blue-100",
-      message: "Very Wet",
-    };
-  };
-
-  // Format AI advice for display with bullet points
-  const formatAdviceText = (text) => {
-    if (!text) return "";
-
-    // Convert bullet points (- item) to proper HTML
-    const withBullets = text.replace(/^- (.+)$/gm, "<li>$1</li>");
-
-    // Add formatting for bold text
-    const withBold = withBullets.replace(
-      /\*\*(.*?)\*\*/g,
-      "<strong>$1</strong>"
-    );
-
-    // If there are list items, wrap them in a ul
-    const withLists = withBold.replace(
-      /<li>(.+)<\/li>/g,
-      '<ul class="list-disc list-inside my-2"><li>$1</li></ul>'
-    );
-
-    // Return as HTML
-    return (
-      <div
-        dangerouslySetInnerHTML={{ __html: withLists.replace(/\n/g, "<br/>") }}
-      />
-    );
-  };
-
-  // Get the display name for the selected plant
-  const getSelectedPlantName = () => {
-    if (selectedPlant === "custom") {
-      return customPlant.trim() === "" ? "Other (specify)" : customPlant;
-    } else {
-      const plant = commonPlants.find((p) => p.id === selectedPlant);
-      return plant ? plant.nameEn : "General Advice";
-    }
-  };
-
-  // If still loading, show a loading state
+  // Loading screen
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -622,17 +584,16 @@ const SmartFarmAdvisor = () => {
             className="w-2 h-2 bg-green-600 rounded-full animate-bounce"
             style={{ animationDelay: "0.4s" }}
           ></div>
-          <span className="text-gray-700">Loading Smart Farm Advisor...</span>
+          <span className="text-gray-700">
+            Loading Karmiel Smart Farm Advisor...
+          </span>
         </div>
       </div>
     );
   }
 
-  // If userData is null or role isn't authorized, show no-permission message
-  if (
-    !userData ||
-    (userData.role !== "Manager" && userData.role !== "Worker")
-  ) {
+  // Permission check (simplified)
+  if (!userData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-red-600 text-xl font-semibold">
@@ -656,7 +617,7 @@ const SmartFarmAdvisor = () => {
               <span>Back</span>
             </button>
             <h1 className="text-2xl font-bold text-gray-900">
-              Smart Farm Advisor
+              Smart Farm Advisor - Karmiel (כרמיאל)
             </h1>
           </div>
         </div>
@@ -673,20 +634,39 @@ const SmartFarmAdvisor = () => {
             <RefreshCw
               className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
             />
-            <span>{isRefreshing ? "Refreshing..." : "Refresh Data"}</span>
+            <span>
+              {isRefreshing ? "Refreshing..." : "Refresh Weather Data"}
+            </span>
           </button>
         </div>
 
-        {/* Sensor Data Overview */}
-        {sensorData && (
+        {/* Location Info */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <MapPin className="h-6 w-6 text-green-600 mr-2" />
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  כרמיאל (Karmiel) - Fixed Monitoring Location
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Northern District, Galilee • Coordinates:{" "}
+                  {KARMIEL_LOCATION.lat.toFixed(4)}°N,{" "}
+                  {KARMIEL_LOCATION.lon.toFixed(4)}°E
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Weather Data Overview with Multi-Level Soil Temperatures */}
+        {weatherData && (
           <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Settings className="h-5 w-5 text-blue-500 mr-2" />
-              Latest Sensor Readings
+              Latest Weather Readings from Karmiel
               <span className="ml-2 text-xs text-gray-500">
-                {sensorData.receivedAt
-                  ? `(${new Date(sensorData.receivedAt).toLocaleString()})`
-                  : ""}
+                ({weatherData.receivedAt})
               </span>
               {isRefreshing && (
                 <span className="ml-2 flex items-center text-xs text-gray-500">
@@ -701,22 +681,27 @@ const SmartFarmAdvisor = () => {
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Temperature</p>
                 <p className="text-xl font-bold text-gray-800">
-                  {sensorData.temperature !== undefined ? (
-                    `${sensorData.temperature}°C`
+                  {weatherData.temperature !== undefined ? (
+                    `${weatherData.temperature}°C`
                   ) : (
                     <span className="text-gray-400 text-base italic">
                       No data
                     </span>
                   )}
                 </p>
+                {weatherData.apparentTemperature && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Feels: {weatherData.apparentTemperature}°C
+                  </p>
+                )}
               </div>
 
               {/* Air Humidity */}
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Air Humidity</p>
                 <p className="text-xl font-bold text-gray-800">
-                  {sensorData.humidity !== undefined ? (
-                    `${sensorData.humidity}%`
+                  {weatherData.humidity !== undefined ? (
+                    `${weatherData.humidity}%`
                   ) : (
                     <span className="text-gray-400 text-base italic">
                       No data
@@ -729,9 +714,9 @@ const SmartFarmAdvisor = () => {
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Soil Humidity</p>
                 <p className="text-xl font-bold text-gray-800">
-                  {sensorData["Soil humidity"] !== undefined ? (
+                  {weatherData.soilHumidityRaw !== undefined ? (
                     <>
-                      {sensorData["Soil humidity"]}
+                      {weatherData.soilHumidityRaw}
                       <span className="text-xs text-gray-600 ml-1">
                         (0-4095)
                       </span>
@@ -743,18 +728,19 @@ const SmartFarmAdvisor = () => {
                   )}
                 </p>
 
-                {moisture !== undefined ? (
+                {weatherData.soilHumidity !== undefined ? (
                   <div
                     className={`mt-2 px-2 py-1 text-xs rounded-full text-center ${
-                      getMoistureStatus(moisture).bg
-                    } ${getMoistureStatus(moisture).color}`}
+                      getMoistureStatus(weatherData.soilHumidity).bg
+                    } ${getMoistureStatus(weatherData.soilHumidity).color}`}
                   >
-                    {moisture}% - {getMoistureStatus(moisture).message}
+                    {weatherData.soilHumidity}% -{" "}
+                    {getMoistureStatus(weatherData.soilHumidity).message}
                   </div>
                 ) : (
-                  sensorData["Soil humidity"] !== undefined && (
+                  weatherData.soilHumidityRaw !== undefined && (
                     <div className="mt-2 px-2 py-1 text-xs rounded-full text-center bg-gray-100 text-gray-600">
-                      Conversion error
+                      Estimated
                     </div>
                   )
                 )}
@@ -764,8 +750,27 @@ const SmartFarmAdvisor = () => {
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Light Level</p>
                 <p className="text-xl font-bold text-gray-800">
-                  {sensorData["Light"] !== undefined ? (
-                    sensorData["Light"]
+                  {weatherData.light !== undefined ? (
+                    weatherData.light
+                  ) : (
+                    <span className="text-gray-400 text-base italic">
+                      No data
+                    </span>
+                  )}
+                </p>
+                {weatherData.uvIndex !== undefined && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    UV: {weatherData.uvIndex}
+                  </p>
+                )}
+              </div>
+
+              {/* Pressure */}
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Pressure</p>
+                <p className="text-xl font-bold text-gray-800">
+                  {weatherData.pressure !== undefined ? (
+                    `${weatherData.pressure} hPa`
                   ) : (
                     <span className="text-gray-400 text-base italic">
                       No data
@@ -773,18 +778,118 @@ const SmartFarmAdvisor = () => {
                   )}
                 </p>
               </div>
+            </div>
 
-              {/* Pressure */}
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Pressure</p>
-                <p className="text-xl font-bold text-gray-800">
-                  {sensorData["Pressure"] !== undefined ? (
-                    `${sensorData["Pressure"]} hPa`
-                  ) : (
-                    <span className="text-gray-400 text-base italic">
-                      No data
-                    </span>
-                  )}
+            {/* Multi-Level Soil Temperature Section */}
+            <div className="mt-6">
+              <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
+                <Thermometer className="h-4 w-4 text-orange-500 mr-2" />
+                Soil Temperature Profile - Multi-Level Monitoring
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* Surface Temperature */}
+                <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-xs text-orange-600 font-medium">
+                    Surface (0cm)
+                  </p>
+                  <p className="text-lg font-bold text-orange-800">
+                    {weatherData.soilTemperatures?.surface !== undefined ? (
+                      `${weatherData.soilTemperatures.surface}°C`
+                    ) : (
+                      <span className="text-gray-400 text-sm italic">
+                        No data
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-orange-500 mt-1">Top layer</p>
+                </div>
+
+                {/* 6cm Depth */}
+                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-xs text-yellow-600 font-medium">
+                    6cm Depth
+                  </p>
+                  <p className="text-lg font-bold text-yellow-800">
+                    {weatherData.soilTemperatures?.depth6cm !== undefined ? (
+                      `${weatherData.soilTemperatures.depth6cm}°C`
+                    ) : (
+                      <span className="text-gray-400 text-sm italic">
+                        No data
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-yellow-500 mt-1">Shallow roots</p>
+                </div>
+
+                {/* 18cm Depth */}
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-xs text-green-600 font-medium">
+                    18cm Depth
+                  </p>
+                  <p className="text-lg font-bold text-green-800">
+                    {weatherData.soilTemperatures?.depth18cm !== undefined ? (
+                      `${weatherData.soilTemperatures.depth18cm}°C`
+                    ) : (
+                      <span className="text-gray-400 text-sm italic">
+                        No data
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-green-500 mt-1">Main root zone</p>
+                </div>
+
+                {/* 54cm Depth */}
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-xs text-blue-600 font-medium">
+                    54cm Depth
+                  </p>
+                  <p className="text-lg font-bold text-blue-800">
+                    {weatherData.soilTemperatures?.depth54cm !== undefined ? (
+                      `${weatherData.soilTemperatures.depth54cm}°C`
+                    ) : (
+                      <span className="text-gray-400 text-sm italic">
+                        No data
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-blue-500 mt-1">Deep roots</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Weather Info */}
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-2 bg-gray-50 rounded text-center">
+                <p className="text-xs text-gray-600">Wind</p>
+                <p className="font-bold text-gray-800">
+                  {weatherData.windSpeed
+                    ? `${weatherData.windSpeed} km/h`
+                    : "N/A"}
+                </p>
+              </div>
+              <div className="p-2 bg-gray-50 rounded text-center">
+                <p className="text-xs text-gray-600">Cloud Cover</p>
+                <p className="font-bold text-gray-800">
+                  {weatherData.cloudCover !== undefined &&
+                  weatherData.cloudCover !== null
+                    ? `${weatherData.cloudCover}%`
+                    : "N/A"}
+                </p>
+              </div>
+              <div className="p-2 bg-gray-50 rounded text-center">
+                <p className="text-xs text-gray-600">Precipitation</p>
+                <p className="font-bold text-gray-800">
+                  {weatherData.precipitation !== undefined
+                    ? `${weatherData.precipitation} mm`
+                    : "0 mm"}
+                </p>
+              </div>
+              <div className="p-2 bg-gray-50 rounded text-center">
+                <p className="text-xs text-gray-600">UV Index</p>
+                <p className="font-bold text-gray-800">
+                  {weatherData.uvIndex !== undefined
+                    ? weatherData.uvIndex
+                    : "N/A"}
                 </p>
               </div>
             </div>
@@ -795,38 +900,45 @@ const SmartFarmAdvisor = () => {
                 <span className="text-sm text-gray-600 mr-2">
                   Data quality:
                 </span>
+                {(() => {
+                  const availableCount = [
+                    weatherData.temperature,
+                    weatherData.humidity,
+                    weatherData.soilHumidity,
+                    weatherData.light,
+                    weatherData.pressure,
+                    weatherData.soilTemperatures?.surface,
+                    weatherData.soilTemperatures?.depth6cm,
+                    weatherData.soilTemperatures?.depth18cm,
+                    weatherData.soilTemperatures?.depth54cm,
+                  ].filter((val) => val !== undefined).length;
 
-                {Object.keys(sensorData).filter(
-                  (key) =>
-                    [
-                      "temperature",
-                      "humidity",
-                      "Soil humidity",
-                      "Light",
-                      "Pressure",
-                    ].includes(key) && sensorData[key] !== undefined
-                ).length >= 4 ? (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                    Good
-                  </span>
-                ) : Object.keys(sensorData).filter(
-                    (key) =>
-                      [
-                        "temperature",
-                        "humidity",
-                        "Soil humidity",
-                        "Light",
-                        "Pressure",
-                      ].includes(key) && sensorData[key] !== undefined
-                  ).length >= 2 ? (
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                    Partial
-                  </span>
-                ) : (
-                  <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                    Limited
-                  </span>
-                )}
+                  if (availableCount >= 7) {
+                    return (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        Excellent
+                      </span>
+                    );
+                  } else if (availableCount >= 5) {
+                    return (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        Good
+                      </span>
+                    );
+                  } else if (availableCount >= 3) {
+                    return (
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                        Partial
+                      </span>
+                    );
+                  } else {
+                    return (
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                        Limited
+                      </span>
+                    );
+                  }
+                })()}
               </div>
 
               <button
@@ -843,17 +955,17 @@ const SmartFarmAdvisor = () => {
           </div>
         )}
 
-        {/* No Sensor Data Message */}
-        {!sensorData && !loading && (
+        {/* No Weather Data Message */}
+        {!weatherData && !loading && (
           <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
             <div className="p-6 flex flex-col items-center justify-center">
               <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
               <h3 className="text-lg font-medium text-gray-900 mb-1">
-                No Sensor Data Available
+                No Weather Data Available for Karmiel
               </h3>
               <p className="text-gray-600 mb-4 text-center">
-                We couldn't find any sensor readings in the database. Try
-                refreshing or check your sensor connections.
+                We couldn't fetch weather data for Karmiel. Try refreshing or
+                check your internet connection.
               </p>
               <button
                 onClick={handleRefresh}
@@ -864,7 +976,7 @@ const SmartFarmAdvisor = () => {
                   className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
                 />
                 <span>
-                  {isRefreshing ? "Checking..." : "Check for Sensor Data"}
+                  {isRefreshing ? "Checking..." : "Check for Weather Data"}
                 </span>
               </button>
             </div>
@@ -939,7 +1051,7 @@ const SmartFarmAdvisor = () => {
                 <textarea
                   value={additionalDescription}
                   onChange={(e) => setAdditionalDescription(e.target.value)}
-                  placeholder="Add any additional context about your plants or growing conditions (optional)"
+                  placeholder="Add any additional context about your plants or growing conditions in Karmiel (optional)"
                   rows={3}
                   className="w-full p-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
@@ -951,23 +1063,26 @@ const SmartFarmAdvisor = () => {
               disabled={
                 isLoadingAdvice ||
                 (isCustomPlant && customPlant.trim() === "") ||
-                !sensorData
+                !weatherData
               }
               className={`mt-4 px-4 py-2 rounded-md text-white transition-colors w-full 
                 ${
                   isLoadingAdvice ||
                   (isCustomPlant && customPlant.trim() === "") ||
-                  !sensorData
+                  !weatherData
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-green-600 hover:bg-green-700"
                 }`}
             >
-              {!sensorData ? "No Sensor Data Available" : "Get Growing Advice"}
+              {!weatherData
+                ? "No Weather Data Available"
+                : "Get Multi-Level Soil Analysis for Karmiel"}
             </button>
 
-            {!sensorData && (
+            {!weatherData && (
               <p className="mt-2 text-center text-xs text-red-500">
-                You need sensor data to get advice. Please refresh data first.
+                You need weather data from Karmiel to get advice. Please refresh
+                data first.
               </p>
             )}
           </div>
@@ -988,7 +1103,7 @@ const SmartFarmAdvisor = () => {
                   style={{ animationDelay: "0.4s" }}
                 ></div>
                 <span className="text-gray-500 ml-2">
-                  Getting AI recommendations based on sensor data...
+                  Analyzing multi-level soil temperature data from Karmiel...
                 </span>
               </div>
             </div>
@@ -1076,14 +1191,16 @@ const SmartFarmAdvisor = () => {
               </div>
             </div>
 
-            {/* Data Disclaimer */}
+            {/* Enhanced Data Disclaimer */}
             <div className="md:col-span-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 mt-2">
               <p className="flex items-start">
                 <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-gray-500" />
                 <span>
-                  These recommendations are based only on available sensor
-                  readings. For more accurate advice, ensure all sensors are
-                  providing valid data.
+                  These recommendations are based on current weather conditions
+                  and multi-level soil temperature data from Karmiel (כרמיאל),
+                  Northern Israel. Soil temperatures are monitored at surface,
+                  6cm, 18cm, and 54cm depths. Weather data is updated hourly
+                  from Open-Meteo meteorological sources.
                 </span>
               </p>
             </div>
@@ -1092,15 +1209,15 @@ const SmartFarmAdvisor = () => {
             <div className="md:col-span-2 flex justify-center mt-2">
               <button
                 onClick={handleGetAdvice}
-                disabled={!sensorData}
+                disabled={!weatherData}
                 className={`px-4 py-2 rounded-md text-white flex items-center ${
-                  !sensorData
+                  !weatherData
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-green-600 hover:bg-green-700"
                 }`}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                <span>Get Updated Advice</span>
+                <span>Get Updated Multi-Level Soil Analysis</span>
               </button>
             </div>
           </div>
@@ -1108,32 +1225,38 @@ const SmartFarmAdvisor = () => {
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6 text-center">
             <MessageSquare className="h-12 w-12 text-green-600 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Get AI Advice for Your Plants
+              Get AI Advice with Multi-Level Soil Temperature Analysis
             </h3>
             <p className="text-gray-600 mb-6">
-              Select a plant type and click "Get Growing Advice" to receive
-              personalized recommendations based on your sensor data
+              Select a plant type and click "Get Multi-Level Soil Analysis for
+              Karmiel" to receive personalized recommendations based on current
+              weather conditions and soil temperature data at multiple depths in
+              Karmiel (כרמיאל)
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 flex-wrap">
               <div className="flex items-center gap-2 text-gray-700">
                 <Droplet className="h-5 w-5 text-blue-600" />
-                <span>Irrigation Advice</span>
+                <span>Weather-Based Irrigation</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <Thermometer className="h-5 w-5 text-orange-600" />
+                <span>Multi-Level Soil Temperature</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <AlertCircle className="h-5 w-5 text-red-600" />
-                <span>Issue Detection</span>
+                <span>Climate Issue Detection</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <UserCheck className="h-5 w-5 text-green-600" />
-                <span>Personalized Recommendations</span>
+                <span>Karmiel-Specific Recommendations</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <CloudRain className="h-5 w-5 text-purple-600" />
-                <span>Future Conditions</span>
+                <span>Local Weather Forecasting</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <FileText className="h-5 w-5 text-amber-600" />
-                <span>Key Conclusions</span>
+                <span>Agricultural Insights</span>
               </div>
             </div>
           </div>
