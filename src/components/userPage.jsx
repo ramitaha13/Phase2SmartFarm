@@ -23,6 +23,7 @@ import {
   Gauge, // Added for Air Pressure
   Lightbulb, // Added for Farmer Assistant
   Flower, // Added for Plant Health Analyzer
+  Map, // Added Map icon for Heatmap
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -287,6 +288,12 @@ const UserPage = () => {
     setIsMobileMenuOpen(false);
   };
 
+  // Add handler for Heatmap button
+  const handleHeatmapClick = () => {
+    navigate("/SpatialModelDashboard");
+    setIsMobileMenuOpen(false);
+  };
+
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
   };
@@ -472,6 +479,13 @@ const UserPage = () => {
                 <span>Sensor Analytics</span>
               </button>
               <button
+                onClick={handleHeatmapClick}
+                className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+              >
+                <Map className="h-5 w-5" />
+                <span>Heatmap</span>
+              </button>
+              <button
                 onClick={handleIrrigationClick}
                 className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
               >
@@ -561,6 +575,13 @@ const UserPage = () => {
             >
               <BarChart className="h-5 w-5" />
               <span>Sensor Analytics</span>
+            </button>
+            <button
+              onClick={handleHeatmapClick}
+              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+            >
+              <Map className="h-5 w-5" />
+              <span>Heatmap</span>
             </button>
             <button
               onClick={handleIrrigationClick}

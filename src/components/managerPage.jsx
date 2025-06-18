@@ -22,7 +22,8 @@ import {
   Bot,
   Gauge,
   Lightbulb,
-  Flower, // Changed from Plant to Flower which is available in lucide-react
+  Flower,
+  Map, // Added Map icon for Heatmap
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -330,6 +331,12 @@ const ManagerPage = () => {
     setSidebarOpen(false);
   };
 
+  // Add handler for Heatmap button
+  const handleHeatmapClick = () => {
+    navigate("/SpatialModelDashboard");
+    setSidebarOpen(false);
+  };
+
   // 1) If still loading, show a loading state
   if (loading) {
     return (
@@ -414,6 +421,13 @@ const ManagerPage = () => {
           >
             <BarChart className="h-5 w-5" />
             <span>Sensor Analytics</span>
+          </button>
+          <button
+            onClick={handleHeatmapClick}
+            className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+          >
+            <Map className="h-5 w-5" />
+            <span>Heatmap</span>
           </button>
           <button
             onClick={handleIrrigationClick}
@@ -540,6 +554,13 @@ const ManagerPage = () => {
             >
               <BarChart className="h-5 w-5" />
               <span>Sensor Analytics</span>
+            </button>
+            <button
+              onClick={handleHeatmapClick}
+              className="w-full flex items-center space-x-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md"
+            >
+              <Map className="h-5 w-5" />
+              <span>Heatmap</span>
             </button>
             <button
               onClick={handleIrrigationClick}

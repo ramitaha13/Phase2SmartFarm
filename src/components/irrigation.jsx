@@ -19,6 +19,7 @@ import {
   Gauge,
   Sun,
   Shield,
+  Globe, // Added for language toggle
 } from "lucide-react";
 
 const SmartFarmAdvisor = () => {
@@ -27,6 +28,9 @@ const SmartFarmAdvisor = () => {
   const [loading, setLoading] = useState(true);
   const [weatherData, setWeatherData] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Language state - NEW
+  const [language, setLanguage] = useState("english"); // "english" or "hebrew"
 
   // Advice states
   const [irrigationAdvice, setIrrigationAdvice] = useState("");
@@ -72,6 +76,67 @@ const SmartFarmAdvisor = () => {
     { id: "zucchini", nameEn: "Zucchini", nameHe: "קישוא" },
     { id: "custom", nameEn: "Other (specify)", nameHe: "אחר (פרט)" },
   ];
+
+  // UI Text translations - NEW
+  const uiText = {
+    english: {
+      title: "Smart Farm Advisor",
+      back: "Back",
+      refreshWeather: "Refresh Weather Data",
+      refreshing: "Refreshing...",
+      loadingData: "Loading Karmiel Smart Farm Advisor...",
+      noPermission: "You do not have permission to view this page.",
+      latestReadings: "Latest Weather Readings from Karmiel",
+      soilTempProfile: "Soil Temperature Profile - Multi-Level Monitoring",
+      plantSelection: "Plant Selection",
+      addDescription: "Add additional description (optional)",
+      getAdvice: "Get Multi-Level Soil Analysis for Karmiel",
+      noWeatherData: "No Weather Data Available",
+      irrigationTitle: "Smart Irrigation Decisions",
+      issuesTitle: "Field Issues Detection",
+      recommendationsTitle: "Personalized Predictions & Recommendations",
+      forecastTitle: "Future Conditions Forecast",
+      conclusionsTitle: "Conclusions - Key Insights",
+      language: "Language",
+      english: "English",
+      hebrew: "עברית",
+      analyzing: "Analyzing multi-level soil temperature data from Karmiel...",
+      getUpdatedAnalysis: "Get Updated Multi-Level Soil Analysis",
+      aiAdviceTitle: "Get AI Advice with Multi-Level Soil Temperature Analysis",
+      aiAdviceDesc:
+        'Select a plant type and click "Get Multi-Level Soil Analysis for Karmiel" to receive personalized recommendations based on current weather conditions and soil temperature data at multiple depths in Karmiel',
+    },
+    hebrew: {
+      title: "יועץ החווה החכמה - כרמיאל",
+      back: "חזור",
+      refreshWeather: "רענן נתוני מזג אוויר",
+      refreshing: "מרענן...",
+      loadingData: "טוען יועץ החווה החכמה כרמיאל...",
+      noPermission: "אין לך הרשאה לצפות בדף זה.",
+      latestReadings: "קריאות מזג אוויר אחרונות מכרמיאל",
+      soilTempProfile: "פרופיל טמפרטורת קרקע - ניטור רב-שכבתי",
+      plantSelection: "בחירת צמח",
+      addDescription: "הוסף תיאור נוסף (אופציונלי)",
+      getAdvice: "קבל ניתוח קרקע רב-שכבתי לכרמיאל",
+      noWeatherData: "אין נתוני מזג אוויר זמינים",
+      irrigationTitle: "החלטות השקיה חכמות",
+      issuesTitle: "זיהוי בעיות בשטח",
+      recommendationsTitle: "תחזיות והמלצות מותאמות אישית",
+      forecastTitle: "חיזוי תנאים עתידיים",
+      conclusionsTitle: "מסקנות - מה ניתן להסיק",
+      language: "שפה",
+      english: "English",
+      hebrew: "עברית",
+      analyzing: "מנתח נתוני טמפרטורת קרקע רב-שכבתיים מכרמיאל...",
+      getUpdatedAnalysis: "קבל ניתוח קרקע רב-שכבתי מעודכן",
+      aiAdviceTitle: "קבל עצת AI עם ניתוח טמפרטורת קרקע רב-שכבתי",
+      aiAdviceDesc:
+        'בחר סוג צמח ולחץ על "קבל ניתוח קרקע רב-שכבתי לכרמיאל" כדי לקבל המלצות מותאמות אישית על בסיס תנאי מזג האוויר הנוכחיים ונתוני טמפרטורת קרקע במעמקים שונים בכרמיאל',
+    },
+  };
+
+  // Get current UI text based on language
+  const t = uiText[language];
 
   // Initialize user data and fetch Karmiel weather
   useEffect(() => {
@@ -251,7 +316,7 @@ const SmartFarmAdvisor = () => {
     return { color: "text-blue-700", bg: "bg-blue-100", message: "Very Wet" };
   };
 
-  // Function to get AI advice using weather data including multi-level soil temperatures
+  // Function to get AI advice with language support - MODIFIED
   const getAiAdvice = async () => {
     if (!weatherData) return;
 
@@ -302,9 +367,111 @@ const SmartFarmAdvisor = () => {
             : "23°C"
         }`;
 
-      // Create enhanced prompt with multi-level soil temperature data - always provide advice
-      const prompt = `
-        I have the following sensor readings from my smart farm in Karmiel (כרמיאל), Israel:
+      // Create language-specific prompts - MODIFIED
+      let prompt;
+      let sectionTags;
+
+      if (language === "hebrew") {
+        sectionTags = {
+          irrigation: "[IRRIGATION]",
+          issues: "[ISSUES]",
+          recommendations: "[RECOMMENDATIONS]",
+          forecast: "[FORECAST]",
+          conclusions: "[CONCLUSIONS]",
+        };
+
+        prompt = `
+        יש לי את הקריאות הבאות מחיישנים מהחווה החכמה שלי בכרמיאל, ישראל:
+        - רמת אור: ${
+          weatherData.light !== undefined ? weatherData.light : "1000"
+        }
+        - לחץ אוויר: ${
+          weatherData.pressure !== undefined
+            ? weatherData.pressure + " hPa"
+            : "1013 hPa"
+        }
+        - ערך גולמי לחות קרקע: ${
+          weatherData.soilHumidityRaw !== undefined
+            ? weatherData.soilHumidityRaw
+            : "2000"
+        } 
+        - אחוז לחות קרקע: ${
+          weatherData.soilHumidity !== undefined
+            ? weatherData.soilHumidity + "%"
+            : "35%"
+        } (מומר מערך גולמי)
+        - סטטוס לחות קרקע: ${
+          weatherData.soilHumidity !== undefined
+            ? moistureStatus.message
+            : "Moderate"
+        }
+        - לחות אוויר: ${
+          weatherData.humidity !== undefined
+            ? weatherData.humidity + "%"
+            : "45%"
+        }
+        - טמפרטורת אוויר: ${
+          weatherData.temperature !== undefined
+            ? weatherData.temperature + "°C"
+            : "25°C"
+        }
+        ${soilTempText}
+        - מהירות רוח: ${
+          weatherData.windSpeed !== undefined
+            ? weatherData.windSpeed + " km/h"
+            : "10 km/h"
+        }
+        - מדד UV: ${
+          weatherData.uvIndex !== undefined ? weatherData.uvIndex : "5"
+        }
+        - כיסוי עננים: ${
+          weatherData.cloudCover !== undefined
+            ? weatherData.cloudCover + "%"
+            : "20%"
+        }
+        - משקעים: ${
+          weatherData.precipitation !== undefined
+            ? weatherData.precipitation + " mm"
+            : "0 mm"
+        }
+        - חותמת זמן: ${weatherData.receivedAt || "קריאה נוכחית"}
+        
+        אני מגדל ${plantName} בכרמיאל, צפון ישראל (אזור הגליל). ${
+          additionalDescription ? `הקשר נוסף: ${additionalDescription}` : ""
+        }
+        
+        על בסיס הקריאות האלה מתנאי האקלים הים-תיכוני של כרמיאל, תן עצות מקיפות מבוססות נתונים המאורגנות בדיוק לחמישה חלקים נפרדים. אתה חייב לתת המלצות מפורטות לכל חלק - לעולם אל תגיד "אין נתונים" או "לא זמין". השתמש בערכים שסופקו ובידע שלך על חקלאות ים-תיכונית כדי לתת עצות ספציפיות וניתנות ליישום:
+        
+        1. "החלטות השקיה חכמות" - תן המלצות ספציפיות לזמני השקיה, תזמון וכמויות על בסיס לחות הקרקע, פרופיל הטמפרטורות ותנאי מזג האוויר. קח בחשבון דפוסי האקלים הים-תיכוני והצרכים העונתיים.
+        
+        2. "זיהוי בעיות בשטח" - זהה בעיות חקלאיות פוטנציאליות ואמצעי מניעה על בסיס הקריאות הנוכחיות. נתח שינויי טמפרטורת קרקע, רמות לחות וגורמי לחץ סביבתיים. תמיד תן בעיות ספציפיות לשים עליהן לב ופתרונות.
+        
+        3. "תחזיות והמלצות מותאמות אישית" - תן המלצות מותאמות אישית לפעולות חקלאיות מיידיות ועתידיות. כלול דישון, ניהול מזיקים, טיפוח צמחים ואסטרטגיות אופטימיזציה ספציפיות לתנאי כרמיאל והגידול שנבחר.
+        
+        4. "חיזוי תנאים עתידיים" - תן תחזיות על תנאים חקלאיים עתידיים והכנות נדרשות. קח בחשבון דפוסים עונתיים, מגמות מזג אוויר וצרכי פיתוח קרקע ל-1-2 השבועות הקרובים באקלים הים-תיכוני.
+        
+        5. "מסקנות - מה ניתן להסיק" - תן מסקנות מקיפות על בריאות החווה הכללית, אופטימיזציה של פרודוקטיביות והמלצות לתכנון אסטרטגי. כלול פריטי פעולה ספציפיים ועדיפויות ניטור.
+        
+        דרישות קריטיות:
+        - ענה בעברית בלבד
+        - כל חלק חייב להיות 3-5 משפטים עם עצות ספציפיות וניתנות ליישום
+        - לעולם אל תשתמש בביטויים כמו "אין נתונים", "לא זמין", או "N/A"
+        - תמיד תן המלצות קונקרטיות גם אם חלק מהקריאות מוערכות
+        - כלול זמנים, כמויות ונהלים ספציפיים במידת הצורך
+        - הפוך את העצות למעשיות וניתנות ליישום מיידי לאזור כרמיאל
+        - קח בחשבון את האקלים הים-תיכוני, הגובה (~300 מ') והפרקטיקות החקלאיות המקומיות
+        `;
+      } else {
+        sectionTags = {
+          irrigation: "[IRRIGATION]",
+          issues: "[ISSUES]",
+          recommendations: "[RECOMMENDATIONS]",
+          forecast: "[FORECAST]",
+          conclusions: "[CONCLUSIONS]",
+        };
+
+        prompt = `
+        I have the following sensor readings from my smart farm in Karmiel, Israel:
         - Light level: ${
           weatherData.light !== undefined ? weatherData.light : "1000"
         }
@@ -360,53 +527,58 @@ const SmartFarmAdvisor = () => {
         - Timestamp: ${weatherData.receivedAt || "Current reading"}
         
         I'm growing ${plantName} in Karmiel, Northern Israel (Galilee region). ${
-        additionalDescription
-          ? `Additional context: ${additionalDescription}`
-          : ""
-      }
+          additionalDescription
+            ? `Additional context: ${additionalDescription}`
+            : ""
+        }
         
         Based on these readings from Karmiel's Mediterranean climate conditions, provide comprehensive data-driven advice organized into exactly FIVE separate sections. You MUST provide detailed recommendations for each section - never say "no data" or "not available". Use the provided values and your knowledge of Mediterranean agriculture to give specific, actionable advice:
         
-        1. "החלטות השקיה חכמות (Smart Irrigation)" - Provide specific irrigation schedule, timing, and amount recommendations based on the soil humidity, temperature profile, and weather conditions. Consider the Mediterranean climate patterns and seasonal needs.
+        1. "Smart Irrigation Decisions" - Provide specific irrigation schedule, timing, and amount recommendations based on the soil humidity, temperature profile, and weather conditions. Consider the Mediterranean climate patterns and seasonal needs.
         
-        2. "זיהוי בעיות בשטח" - Identify potential agricultural issues and preventive measures based on the current readings. Analyze soil temperature variations, humidity levels, and environmental stress factors. Always provide specific problems to watch for and solutions.
+        2. "Field Issues Detection" - Identify potential agricultural issues and preventive measures based on the current readings. Analyze soil temperature variations, humidity levels, and environmental stress factors. Always provide specific problems to watch for and solutions.
         
-        3. "תחזיות והמלצות מותאמות אישית" - Give personalized recommendations for immediate and upcoming agricultural actions. Include fertilization, pest management, plant care, and optimization strategies specific to Karmiel's conditions and the selected crop.
+        3. "Personalized Predictions & Recommendations" - Give personalized recommendations for immediate and upcoming agricultural actions. Include fertilization, pest management, plant care, and optimization strategies specific to Karmiel's conditions and the selected crop.
         
-        4. "חיזוי תנאים עתידיים" - Provide predictions about upcoming agricultural conditions and required preparations. Consider seasonal patterns, weather trends, and soil development needs for the next 1-2 weeks in the Mediterranean climate.
+        4. "Future Conditions Forecast" - Provide predictions about upcoming agricultural conditions and required preparations. Consider seasonal patterns, weather trends, and soil development needs for the next 1-2 weeks in the Mediterranean climate.
         
-        5. "מסקנות - מה ניתן להסיק" - Deliver comprehensive conclusions about overall farm health, productivity optimization, and strategic planning recommendations. Include specific action items and monitoring priorities.
+        5. "Conclusions - Key Insights" - Deliver comprehensive conclusions about overall farm health, productivity optimization, and strategic planning recommendations. Include specific action items and monitoring priorities.
         
         CRITICAL REQUIREMENTS:
-        - Respond in Hebrew language only
+        - Respond in English only
         - Each section MUST be 3-5 sentences with specific, actionable advice
-        - NEVER use phrases like "אין נתונים" (no data), "לא זמין" (not available), or "N/A"
+        - NEVER use phrases like "no data", "not available", or "N/A"
         - Always provide concrete recommendations even if some readings are estimated
         - Include specific timing, amounts, and procedures where relevant
         - Make advice practical and immediately implementable for Karmiel region
         - Consider the Mediterranean climate, elevation (~300m), and local agricultural practices
+        `;
+      }
+
+      // Add formatting instructions
+      prompt += `
         
         Format your response as follows:
         
-        [IRRIGATION]
+        ${sectionTags.irrigation}
         Your detailed irrigation advice with specific timing and amounts
-        [/IRRIGATION]
+        [/${sectionTags.irrigation.slice(1)}
         
-        [ISSUES]
+        ${sectionTags.issues}
         Your identified issues and preventive measures with specific solutions
-        [/ISSUES]
+        [/${sectionTags.issues.slice(1)}
         
-        [RECOMMENDATIONS]
+        ${sectionTags.recommendations}
         Your comprehensive personalized recommendations with immediate actions
-        [/RECOMMENDATIONS]
+        [/${sectionTags.recommendations.slice(1)}
         
-        [FORECAST]
+        ${sectionTags.forecast}
         Your detailed forecast and preparation advice for the next 1-2 weeks
-        [/FORECAST]
+        [/${sectionTags.forecast.slice(1)}
         
-        [CONCLUSIONS]
+        ${sectionTags.conclusions}
         Your strategic conclusions with specific action items and monitoring priorities
-        [/CONCLUSIONS]
+        [/${sectionTags.conclusions.slice(1)}
       `;
 
       // Create payload for Gemini API
@@ -551,10 +723,16 @@ const SmartFarmAdvisor = () => {
 
   const getSelectedPlantName = () => {
     if (selectedPlant === "custom") {
-      return customPlant.trim() === "" ? "Other (specify)" : customPlant;
+      return customPlant.trim() === ""
+        ? commonPlants.find((p) => p.id === "custom")[
+            language === "hebrew" ? "nameHe" : "nameEn"
+          ]
+        : customPlant;
     } else {
       const plant = commonPlants.find((p) => p.id === selectedPlant);
-      return plant ? plant.nameEn : "General Advice";
+      return plant
+        ? plant[language === "hebrew" ? "nameHe" : "nameEn"]
+        : t.plantSelection;
     }
   };
 
@@ -568,6 +746,17 @@ const SmartFarmAdvisor = () => {
 
   const handleRefresh = () => {
     fetchKarmielWeatherData();
+  };
+
+  // Language toggle handler - NEW
+  const handleLanguageToggle = () => {
+    setLanguage(language === "english" ? "hebrew" : "english");
+    // Clear current advice to encourage re-generation in new language
+    setIrrigationAdvice("");
+    setIssuesDetected("");
+    setPersonalizedRecommendations("");
+    setFutureForecast("");
+    setConclusions("");
   };
 
   // Loading screen
@@ -584,9 +773,7 @@ const SmartFarmAdvisor = () => {
             className="w-2 h-2 bg-green-600 rounded-full animate-bounce"
             style={{ animationDelay: "0.4s" }}
           ></div>
-          <span className="text-gray-700">
-            Loading Karmiel Smart Farm Advisor...
-          </span>
+          <span className="text-gray-700">{t.loadingData}</span>
         </div>
       </div>
     );
@@ -597,7 +784,7 @@ const SmartFarmAdvisor = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-red-600 text-xl font-semibold">
-          You do not have permission to view this page.
+          {t.noPermission}
         </div>
       </div>
     );
@@ -605,7 +792,7 @@ const SmartFarmAdvisor = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with Back Button */}
+      {/* Header with Back Button and Language Toggle */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
@@ -614,11 +801,17 @@ const SmartFarmAdvisor = () => {
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ChevronLeft className="h-5 w-5" />
-              <span>Back</span>
+              <span>{t.back}</span>
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Smart Farm Advisor - Karmiel (כרמיאל)
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
+            {/* Language Toggle Button - NEW */}
+            <button
+              onClick={handleLanguageToggle}
+              className="flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-100 transition-colors"
+            >
+              <Globe className="h-4 w-4" />
+              <span>{language === "english" ? t.hebrew : t.english}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -634,9 +827,7 @@ const SmartFarmAdvisor = () => {
             <RefreshCw
               className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
             />
-            <span>
-              {isRefreshing ? "Refreshing..." : "Refresh Weather Data"}
-            </span>
+            <span>{isRefreshing ? t.refreshing : t.refreshWeather}</span>
           </button>
         </div>
 
@@ -647,7 +838,7 @@ const SmartFarmAdvisor = () => {
               <MapPin className="h-6 w-6 text-green-600 mr-2" />
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  כרמיאל (Karmiel) - Fixed Monitoring Location
+                  כרמיאל (Karmiel)
                 </h2>
                 <p className="text-sm text-gray-600">
                   Northern District, Galilee • Coordinates:{" "}
@@ -664,14 +855,14 @@ const SmartFarmAdvisor = () => {
           <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Settings className="h-5 w-5 text-blue-500 mr-2" />
-              Latest Weather Readings from Karmiel
+              {t.latestReadings}
               <span className="ml-2 text-xs text-gray-500">
                 ({weatherData.receivedAt})
               </span>
               {isRefreshing && (
                 <span className="ml-2 flex items-center text-xs text-gray-500">
                   <RefreshCw className="h-3 w-3 animate-spin mr-1" />
-                  Refreshing...
+                  {t.refreshing}
                 </span>
               )}
             </h2>
@@ -784,7 +975,7 @@ const SmartFarmAdvisor = () => {
             <div className="mt-6">
               <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
                 <Thermometer className="h-4 w-4 text-orange-500 mr-2" />
-                Soil Temperature Profile - Multi-Level Monitoring
+                {t.soilTempProfile}
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {/* Surface Temperature */}
@@ -949,7 +1140,7 @@ const SmartFarmAdvisor = () => {
                 <RefreshCw
                   className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`}
                 />
-                <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+                <span>{isRefreshing ? t.refreshing : "Refresh"}</span>
               </button>
             </div>
           </div>
@@ -961,7 +1152,7 @@ const SmartFarmAdvisor = () => {
             <div className="p-6 flex flex-col items-center justify-center">
               <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
               <h3 className="text-lg font-medium text-gray-900 mb-1">
-                No Weather Data Available for Karmiel
+                {t.noWeatherData}
               </h3>
               <p className="text-gray-600 mb-4 text-center">
                 We couldn't fetch weather data for Karmiel. Try refreshing or
@@ -987,7 +1178,7 @@ const SmartFarmAdvisor = () => {
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Leaf className="h-5 w-5 text-green-600 mr-2" />
-            Plant Selection
+            {t.plantSelection}
           </h2>
 
           <div className="relative">
@@ -1012,9 +1203,11 @@ const SmartFarmAdvisor = () => {
                       selectedPlant === plant.id ? "bg-green-50" : ""
                     }`}
                   >
-                    <span className="mr-2">{plant.nameEn}</span>
+                    <span className="mr-2">
+                      {plant[language === "hebrew" ? "nameHe" : "nameEn"]}
+                    </span>
                     <span className="text-gray-500 text-sm">
-                      ({plant.nameHe})
+                      ({plant[language === "hebrew" ? "nameEn" : "nameHe"]})
                     </span>
                   </div>
                 ))}
@@ -1027,7 +1220,11 @@ const SmartFarmAdvisor = () => {
                   type="text"
                   value={customPlant}
                   onChange={(e) => setCustomPlant(e.target.value)}
-                  placeholder="Enter plant name (English or Hebrew)"
+                  placeholder={
+                    language === "hebrew"
+                      ? "הכנס שם צמח (עברית או אנגלית)"
+                      : "Enter plant name (English or Hebrew)"
+                  }
                   className="w-full p-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
@@ -1042,7 +1239,7 @@ const SmartFarmAdvisor = () => {
                 className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mr-2"
               />
               <label htmlFor="showDescriptionToggle" className="text-gray-700">
-                Add additional description (optional)
+                {t.addDescription}
               </label>
             </div>
 
@@ -1051,7 +1248,11 @@ const SmartFarmAdvisor = () => {
                 <textarea
                   value={additionalDescription}
                   onChange={(e) => setAdditionalDescription(e.target.value)}
-                  placeholder="Add any additional context about your plants or growing conditions in Karmiel (optional)"
+                  placeholder={
+                    language === "hebrew"
+                      ? "הוסף הקשר נוסף על הצמחים או תנאי הגידול בכרמיאל (אופציונלי)"
+                      : "Add any additional context about your plants or growing conditions in Karmiel (optional)"
+                  }
                   rows={3}
                   className="w-full p-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
@@ -1074,9 +1275,7 @@ const SmartFarmAdvisor = () => {
                     : "bg-green-600 hover:bg-green-700"
                 }`}
             >
-              {!weatherData
-                ? "No Weather Data Available"
-                : "Get Multi-Level Soil Analysis for Karmiel"}
+              {!weatherData ? t.noWeatherData : t.getAdvice}
             </button>
 
             {!weatherData && (
@@ -1102,9 +1301,7 @@ const SmartFarmAdvisor = () => {
                   className="w-2 h-2 bg-green-600 rounded-full animate-bounce"
                   style={{ animationDelay: "0.4s" }}
                 ></div>
-                <span className="text-gray-500 ml-2">
-                  Analyzing multi-level soil temperature data from Karmiel...
-                </span>
+                <span className="text-gray-500 ml-2">{t.analyzing}</span>
               </div>
             </div>
           </div>
@@ -1130,11 +1327,17 @@ const SmartFarmAdvisor = () => {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="bg-blue-600 text-white py-3 px-4 flex items-center">
                 <Droplet className="h-5 w-5 mr-2" />
-                <h3 className="font-semibold" dir="rtl">
-                  החלטות השקיה חכמות
+                <h3
+                  className="font-semibold"
+                  dir={language === "hebrew" ? "rtl" : "ltr"}
+                >
+                  {t.irrigationTitle}
                 </h3>
               </div>
-              <div className="p-4 bg-blue-50" dir="rtl">
+              <div
+                className="p-4 bg-blue-50"
+                dir={language === "hebrew" ? "rtl" : "ltr"}
+              >
                 {formatAdviceText(irrigationAdvice)}
               </div>
             </div>
@@ -1143,11 +1346,17 @@ const SmartFarmAdvisor = () => {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="bg-red-600 text-white py-3 px-4 flex items-center">
                 <AlertCircle className="h-5 w-5 mr-2" />
-                <h3 className="font-semibold" dir="rtl">
-                  זיהוי בעיות בשטח
+                <h3
+                  className="font-semibold"
+                  dir={language === "hebrew" ? "rtl" : "ltr"}
+                >
+                  {t.issuesTitle}
                 </h3>
               </div>
-              <div className="p-4 bg-red-50" dir="rtl">
+              <div
+                className="p-4 bg-red-50"
+                dir={language === "hebrew" ? "rtl" : "ltr"}
+              >
                 {formatAdviceText(issuesDetected)}
               </div>
             </div>
@@ -1156,11 +1365,17 @@ const SmartFarmAdvisor = () => {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="bg-green-600 text-white py-3 px-4 flex items-center">
                 <UserCheck className="h-5 w-5 mr-2" />
-                <h3 className="font-semibold" dir="rtl">
-                  תחזיות והמלצות מותאמות אישית
+                <h3
+                  className="font-semibold"
+                  dir={language === "hebrew" ? "rtl" : "ltr"}
+                >
+                  {t.recommendationsTitle}
                 </h3>
               </div>
-              <div className="p-4 bg-green-50" dir="rtl">
+              <div
+                className="p-4 bg-green-50"
+                dir={language === "hebrew" ? "rtl" : "ltr"}
+              >
                 {formatAdviceText(personalizedRecommendations)}
               </div>
             </div>
@@ -1169,11 +1384,17 @@ const SmartFarmAdvisor = () => {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="bg-purple-600 text-white py-3 px-4 flex items-center">
                 <CloudRain className="h-5 w-5 mr-2" />
-                <h3 className="font-semibold" dir="rtl">
-                  חיזוי תנאים עתידיים
+                <h3
+                  className="font-semibold"
+                  dir={language === "hebrew" ? "rtl" : "ltr"}
+                >
+                  {t.forecastTitle}
                 </h3>
               </div>
-              <div className="p-4 bg-purple-50" dir="rtl">
+              <div
+                className="p-4 bg-purple-50"
+                dir={language === "hebrew" ? "rtl" : "ltr"}
+              >
                 {formatAdviceText(futureForecast)}
               </div>
             </div>
@@ -1182,11 +1403,17 @@ const SmartFarmAdvisor = () => {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden md:col-span-2">
               <div className="bg-amber-600 text-white py-3 px-4 flex items-center">
                 <FileText className="h-5 w-5 mr-2" />
-                <h3 className="font-semibold" dir="rtl">
-                  מסקנות - מה ניתן להסיק
+                <h3
+                  className="font-semibold"
+                  dir={language === "hebrew" ? "rtl" : "ltr"}
+                >
+                  {t.conclusionsTitle}
                 </h3>
               </div>
-              <div className="p-4 bg-amber-50" dir="rtl">
+              <div
+                className="p-4 bg-amber-50"
+                dir={language === "hebrew" ? "rtl" : "ltr"}
+              >
                 {formatAdviceText(conclusions)}
               </div>
             </div>
@@ -1196,11 +1423,9 @@ const SmartFarmAdvisor = () => {
               <p className="flex items-start">
                 <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-gray-500" />
                 <span>
-                  These recommendations are based on current weather conditions
-                  and multi-level soil temperature data from Karmiel (כרמיאל),
-                  Northern Israel. Soil temperatures are monitored at surface,
-                  6cm, 18cm, and 54cm depths. Weather data is updated hourly
-                  from Open-Meteo meteorological sources.
+                  {language === "hebrew"
+                    ? 'המלצות אלה מבוססות על תנאי מזג האוויר הנוכחיים ונתוני טמפרטורת קרקע רב-שכבתיים מכרמיאל, צפון ישראל. טמפרטורות הקרקע נמדדות במעמקים של משטח, 6 ס"מ, 18 ס"מ ו-54 ס"מ. נתוני מזג האוויר מתעדכנים כל שעה ממקורות מטאורולוגיים של Open-Meteo.'
+                    : "These recommendations are based on current weather conditions and multi-level soil temperature data from Karmiel, Northern Israel. Soil temperatures are monitored at surface, 6cm, 18cm, and 54cm depths. Weather data is updated hourly from Open-Meteo meteorological sources."}
                 </span>
               </p>
             </div>
@@ -1217,7 +1442,7 @@ const SmartFarmAdvisor = () => {
                 }`}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                <span>Get Updated Multi-Level Soil Analysis</span>
+                <span>{t.getUpdatedAnalysis}</span>
               </button>
             </div>
           </div>
@@ -1225,38 +1450,69 @@ const SmartFarmAdvisor = () => {
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6 text-center">
             <MessageSquare className="h-12 w-12 text-green-600 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Get AI Advice with Multi-Level Soil Temperature Analysis
+              {t.aiAdviceTitle}
             </h3>
-            <p className="text-gray-600 mb-6">
-              Select a plant type and click "Get Multi-Level Soil Analysis for
-              Karmiel" to receive personalized recommendations based on current
-              weather conditions and soil temperature data at multiple depths in
-              Karmiel (כרמיאל)
-            </p>
+            <p className="text-gray-600 mb-6">{t.aiAdviceDesc}</p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 flex-wrap">
               <div className="flex items-center gap-2 text-gray-700">
                 <Droplet className="h-5 w-5 text-blue-600" />
-                <span>Weather-Based Irrigation</span>
+                <span>
+                  {language === "hebrew"
+                    ? "השקיה מבוססת מזג אוויר"
+                    : "Weather-Based Irrigation"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <Thermometer className="h-5 w-5 text-orange-600" />
-                <span>Multi-Level Soil Temperature</span>
+                <span>
+                  {language === "hebrew"
+                    ? "טמפרטורת קרקע רב-שכבתית"
+                    : "Multi-Level Soil Temperature"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <AlertCircle className="h-5 w-5 text-red-600" />
-                <span>Climate Issue Detection</span>
+                <span>
+                  {language === "hebrew"
+                    ? "זיהוי בעיות אקלים"
+                    : "Climate Issue Detection"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <UserCheck className="h-5 w-5 text-green-600" />
-                <span>Karmiel-Specific Recommendations</span>
+                <span>
+                  {language === "hebrew"
+                    ? "המלצות ספציפיות לכרמיאל"
+                    : "Karmiel-Specific Recommendations"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <CloudRain className="h-5 w-5 text-purple-600" />
-                <span>Local Weather Forecasting</span>
+                <span>
+                  {language === "hebrew"
+                    ? "תחזית מזג אוויר מקומית"
+                    : "Local Weather Forecasting"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <FileText className="h-5 w-5 text-amber-600" />
-                <span>Agricultural Insights</span>
+                <span>
+                  {language === "hebrew"
+                    ? "תובנות חקלאיות"
+                    : "Agricultural Insights"}
+                </span>
+              </div>
+            </div>
+
+            {/* Language Notice */}
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-center space-x-2">
+                <Globe className="h-4 w-4 text-blue-600" />
+                <span className="text-blue-800 text-sm">
+                  {language === "hebrew"
+                    ? "כעת מוגדר לקבלת עצות בעברית - לחץ על כפתור השפה למעלה לשינוי לאנגלית"
+                    : "Currently set to receive advice in English - click the language button above to switch to Hebrew"}
+                </span>
               </div>
             </div>
           </div>

@@ -35,13 +35,11 @@ const WeatherPage = () => {
     { name: "Karmiel", lat: 32.9186, lon: 35.2952 },
   ]);
 
-  // Add common Israeli locations that might be difficult to find
+  // Add common locations from around the world
   const commonLocations = [
     { name: "Karmiel", lat: 32.9186, lon: 35.2952 },
     { name: "Tel Aviv", lat: 32.0853, lon: 34.7818 },
     { name: "Jerusalem", lat: 31.7683, lon: 35.2137 },
-    { name: "Haifa", lat: 32.794, lon: 34.9896 },
-    { name: "Beer Sheva", lat: 31.2516, lon: 34.7915 },
   ];
 
   const [weatherData, setWeatherData] = useState([]);
@@ -52,24 +50,6 @@ const WeatherPage = () => {
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [searchError, setSearchError] = useState("");
-
-  // Israel boundary coordinates (approximate)
-  const ISRAEL_BOUNDS = {
-    north: 33.4, // Northern boundary
-    south: 29.5, // Southern boundary
-    east: 35.9, // Eastern boundary
-    west: 34.2, // Western boundary
-  };
-
-  // Check if coordinates are within Israel's boundaries
-  const isLocationInIsrael = (lat, lon) => {
-    return (
-      lat >= ISRAEL_BOUNDS.south &&
-      lat <= ISRAEL_BOUNDS.north &&
-      lon >= ISRAEL_BOUNDS.west &&
-      lon <= ISRAEL_BOUNDS.east
-    );
-  };
 
   const getWeatherIcon = (code) => {
     if (code >= 0 && code <= 1) return Sun;
@@ -109,7 +89,7 @@ const WeatherPage = () => {
       setIsRefreshing(true);
       const weatherPromises = citiesArray.map(async (city) => {
         // Enhanced API call with more parameters
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,pressure_msl,apparent_temperature,precipitation,cloud_cover,wind_direction_10m,wind_gusts_10m,uv_index,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,precipitation_sum,wind_speed_10m_max&hourly=temperature_2m&wind_speed_unit=kmh&timezone=IST`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,pressure_msl,apparent_temperature,precipitation,cloud_cover,wind_direction_10m,wind_gusts_10m,uv_index,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,precipitation_sum,wind_speed_10m_max&hourly=temperature_2m&wind_speed_unit=kmh&timezone=auto`;
         console.log("Fetching weather data from:", url);
         const response = await fetch(url);
 
@@ -157,6 +137,7 @@ const WeatherPage = () => {
 
         return {
           name: city.name,
+          country: city.country || "", // Add country information
           lat: city.lat,
           lon: city.lon,
           temperature: `${Math.round(current.temperature_2m)}°C`,
@@ -209,7 +190,7 @@ const WeatherPage = () => {
     setSearchError("");
   };
 
-  // Check common locations first, then use API
+  // Check common locations first, then use OpenStreetMap Nominatim API for worldwide search
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
@@ -231,44 +212,101 @@ const WeatherPage = () => {
       setLoading(true);
       setSearchError("");
 
-      // Use Open-Meteo's free geocoding API
+      // Use OpenStreetMap's Nominatim API for worldwide geocoding
       const response = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
           searchTerm
-        )}&count=10`
+        )}&format=json&addressdetails=1&limit=10&accept-language=en`
       );
+
+      if (!response.ok) {
+        throw new Error(`Nominatim API error: ${response.statusText}`);
+      }
+
       const data = await response.json();
 
-      if (data.results && data.results.length > 0) {
-        // Filter to only Israeli locations
-        const israeliLocations = data.results.filter(
-          (location) =>
-            location.country === "Israel" ||
-            isLocationInIsrael(location.latitude, location.longitude)
-        );
+      if (data && data.length > 0) {
+        // Filter to prioritize significant places (cities, towns, villages)
+        const significantLocations = data.filter((location) => {
+          // Prioritize cities, towns, villages, and other administrative areas
+          const isSignificantPlace =
+            location.class === "place" &&
+            [
+              "city",
+              "town",
+              "village",
+              "suburb",
+              "neighbourhood",
+              "hamlet",
+              "county",
+              "state",
+            ].includes(location.type);
 
-        if (israeliLocations.length > 0) {
-          const result = israeliLocations[0];
+          // Also include administrative boundaries and some landuse
+          const isAdministrative =
+            location.class === "boundary" && location.type === "administrative";
+          const isLanduse =
+            location.class === "landuse" &&
+            ["residential", "commercial", "industrial"].includes(location.type);
+
+          return isSignificantPlace || isAdministrative || isLanduse;
+        });
+
+        // If no significant places found, use all results
+        const locationsToUse =
+          significantLocations.length > 0 ? significantLocations : data;
+
+        if (locationsToUse.length > 0) {
+          const result = locationsToUse[0];
+
+          // Extract the display name and country
+          let locationName = searchTerm;
+          let country = "";
+
+          if (result.address) {
+            // Prioritize city, town, village names
+            locationName =
+              result.address.city ||
+              result.address.town ||
+              result.address.village ||
+              result.address.suburb ||
+              result.address.neighbourhood ||
+              result.address.county ||
+              result.address.state ||
+              result.display_name.split(",")[0];
+
+            // Get country information
+            country = result.address.country || "";
+          }
+
           const newCity = {
-            name: result.name,
-            lat: result.latitude,
-            lon: result.longitude,
+            name: locationName,
+            country: country,
+            lat: parseFloat(result.lat),
+            lon: parseFloat(result.lon),
           };
+
+          console.log("Found location:", newCity);
 
           // Update cities state with the new city
           setCities([newCity]);
           // Fetch weather data for the new city
           fetchWeatherDataForCities([newCity]);
         } else {
-          setSearchError("Please enter an Israeli location only.");
+          setSearchError(
+            "No matching location found. Please try a different search term."
+          );
           setLoading(false);
         }
       } else {
-        setSearchError("No matching location found in Israel.");
+        setSearchError(
+          "No matching location found. Please try a different search term."
+        );
         setLoading(false);
       }
     } catch (err) {
-      setSearchError("Error fetching location data.");
+      console.error("Geocoding error:", err);
+      setSearchError("Error fetching location data. Please try again.");
       setLoading(false);
     }
   };
@@ -614,7 +652,7 @@ const WeatherPage = () => {
               <span>Back</span>
             </button>
             <h1 className="text-2xl font-bold text-gray-900">
-              Israel Weather Forecast
+              Global Weather Forecast
             </h1>
           </div>
         </div>
@@ -641,7 +679,7 @@ const WeatherPage = () => {
           <div className="flex">
             <input
               type="text"
-              placeholder="Search for an area in Israel..."
+              placeholder="Search for any city worldwide..."
               className="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none"
               value={searchTerm}
               onChange={handleInputChange}
@@ -685,7 +723,7 @@ const WeatherPage = () => {
         <div className="mb-8 flex items-center space-x-2">
           <span className="text-xl font-bold text-green-500">&bull;</span>
           <p className="text-gray-600 text-sm italic">
-            Enter the area name in English. Try clicking one of the common
+            Enter any city name worldwide. Try clicking one of the common
             locations above.
           </p>
         </div>
@@ -705,7 +743,8 @@ const WeatherPage = () => {
                 <div className="flex items-center space-x-3">
                   <MapPin className="h-6 w-6 text-gray-600" />
                   <h2 className="text-xl font-bold text-gray-900">
-                    {city.name}, Israel
+                    {city.name}
+                    {city.country ? `, ${city.country}` : ""}
                   </h2>
                 </div>
                 <div className="text-sm text-gray-500">{city.lastUpdated}</div>
@@ -824,7 +863,7 @@ const WeatherPage = () => {
                 </div>
               </div>
 
-              {/* Enhanced Wind Details Section - REPLACED THE OLD ONE */}
+              {/* Enhanced Wind Details Section */}
               <EnhancedWindDetails city={{ ...city, beaufort }} />
 
               {/* Sunrise and Sunset */}
