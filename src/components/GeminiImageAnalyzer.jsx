@@ -31,7 +31,7 @@ const GeminiPlantAnalyzer = () => {
   const [recommendations, setRecommendations] = useState("");
 
   // API settings for Gemini
-  const API_KEY = "AIzaSyAmcBSSX4S4fTkAhCmegZkDUOmou-dvSIo";
+  const API_KEY = "AIzaSyB_VBSQxJznSYBmKxR31zic1mDuZZTIqzI";
   const API_URL =
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 

@@ -50,7 +50,7 @@ const SmartFarmAdvisor = () => {
   const [showDescription, setShowDescription] = useState(false);
 
   // API settings
-  const API_KEY = "AIzaSyAmcBSSX4S4fTkAhCmegZkDUOmou-dvSIo";
+  const API_KEY = "AIzaSyB_VBSQxJznSYBmKxR31zic1mDuZZTIqzI";
   const API_URL =
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
